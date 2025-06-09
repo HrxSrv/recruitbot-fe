@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // For regular users, check if they have a customer record
         try {
           customerData = await getCustomerByEmail(authResponse.user.email)
-          console.log("Customer data:", customerData);
+          console.log("Customer data:", customerData)
           isValidCustomer = customerData !== null && customerData.is_active
         } catch (error) {
           console.error("Customer validation failed:", error)

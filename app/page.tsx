@@ -2,7 +2,7 @@
 
 import { Suspense } from "react"
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { LucideBuilding, Sun, Moon, Loader2 } from "lucide-react"
 
@@ -31,6 +31,7 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "your-googl
 
 function LoginPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { theme, setTheme } = useTheme()
   const { isAuthenticated, isLoading: authLoading, loginWithGoogle } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
@@ -42,13 +43,17 @@ function LoginPageContent() {
   const initializationAttempted = useRef(false)
   const redirectHandled = useRef(false)
 
-  // Redirect if already authenticated - but only after auth loading is complete
+  // Handle redirect for authenticated users - only once
   useEffect(() => {
     if (!authLoading && isAuthenticated && !redirectHandled.current) {
       redirectHandled.current = true
-      router.push("/dashboard")
+      const from = searchParams.get("from")
+      const redirectTo = from && from !== "/" ? from : "/dashboard"
+
+      // Use replace to avoid adding to history
+      window.location.replace(redirectTo)
     }
-  }, [isAuthenticated, authLoading, router])
+  }, [isAuthenticated, authLoading, searchParams])
 
   // Load Google script only if not authenticated
   useEffect(() => {
@@ -191,13 +196,13 @@ function LoginPageContent() {
     )
   }
 
-  // Don't render login form if user is authenticated
+  // Don't render login form if user is authenticated - show redirecting message
   if (isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Redirecting...</p>
+          <p className="mt-2 text-sm text-muted-foreground">Redirecting to dashboard...</p>
         </div>
       </div>
     )
@@ -362,31 +367,7 @@ function LoginPageContent() {
   )
 }
 
-function HomePageContent() {
-  const router = useRouter()
-  const { isAuthenticated, isLoading } = useAuth()
-
-  useEffect(() => {
-    if (!isLoading) {
-      // After auth state is loaded, redirect to appropriate page
-      if (isAuthenticated) {
-        router.replace("/dashboard")
-      }
-    }
-  }, [isAuthenticated, isLoading, router])
-
-  // Show loading state while checking auth and redirecting
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-2 text-sm text-muted-foreground">Initializing...</p>
-      </div>
-    </div>
-  )
-}
-
-export default function LoginPage() {
+export default function HomePage() {
   return (
     <Suspense
       fallback={
@@ -399,23 +380,6 @@ export default function LoginPage() {
       }
     >
       <LoginPageContent />
-    </Suspense>
-  )
-}
-
-export function HomePage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
-          </div>
-        </div>
-      }
-    >
-      <HomePageContent />
     </Suspense>
   )
 }
