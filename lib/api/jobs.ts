@@ -49,25 +49,59 @@ export interface CreateJobData {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
 
-// Helper function for API requests with timeout and authentication
+// Get auth token from cookies
+function getAuthToken(): string | null {
+  if (typeof document === "undefined") return null
+
+  const cookies = document.cookie.split(";")
+  const authCookie = cookies.find((cookie) => cookie.trim().startsWith("auth_token="))
+
+  if (!authCookie) return null
+
+  return authCookie.split("=")[1]
+}
+
+// Helper function for API requests with explicit cookie handling
 async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 10000) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout)
 
+  // Get auth token manually
+  const authToken = getAuthToken()
+
+  // Debug logging
+  console.log("=== API Request Debug ===")
+  console.log("URL:", url)
+  console.log("Auth token found:", !!authToken)
+  console.log("Auth token value:", authToken ? `${authToken.substring(0, 10)}...` : "none")
+
   try {
-    const response = await fetch(url, {
+    const requestOptions: RequestInit = {
       ...options,
       signal: controller.signal,
-      credentials: "include", // This ensures cookies are sent
+      credentials: "include", // Include cookies
       headers: {
         "Content-Type": "application/json",
+        // Explicitly set Authorization header as backup
+        ...(authToken && { Authorization: `Bearer ${authToken}` }),
+        // Also set Cookie header explicitly for cross-origin requests
+        ...(authToken && { Cookie: `auth_token=${authToken}` }),
         ...options.headers,
       },
-    })
+    }
+
+    console.log("Request headers:", requestOptions.headers)
+
+    const response = await fetch(url, requestOptions)
+
+    console.log("Response status:", response.status)
+    console.log("Response headers:", Object.fromEntries(response.headers.entries()))
+
     clearTimeout(timeoutId)
     return response
   } catch (error) {
     clearTimeout(timeoutId)
+    console.error("Fetch error:", error)
     throw error
   }
 }
@@ -75,7 +109,6 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 1
 export async function getJobs(): Promise<Job[]> {
   try {
     const response = await fetchWithAuth(`${API_BASE_URL}/jobs/`)
-
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error("Authentication required. Please log in again.")
