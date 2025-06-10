@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { type Job, getJob, updateJob, deleteJob } from "@/lib/api/jobs"
+import { type Job, getJob, updateJob, deleteJob, publishJob } from "@/lib/api/jobs"
 import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { CreateJobDialog } from "@/components/jobs/create-job-dialog"
 
 export default function JobDetailsPage() {
   const params = useParams()
@@ -45,6 +46,7 @@ export default function JobDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const { toast } = useToast()
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchJob()
@@ -72,7 +74,15 @@ export default function JobDetailsPage() {
 
     try {
       setActionLoading(newStatus)
-      await updateJob(job.id, { status: newStatus as any })
+
+      if (newStatus === "active" && job.status === "draft") {
+        // Use the publish endpoint for draft to active
+        await publishJob(job.id)
+      } else {
+        // Use the update endpoint for other status changes
+        await updateJob(job.id, { status: newStatus as any })
+      }
+
       setJob({ ...job, status: newStatus as any })
       toast({
         title: "Success",
@@ -191,6 +201,10 @@ export default function JobDetailsPage() {
       default:
         return "secondary"
     }
+  }
+
+  const handleEdit = () => {
+    setEditDialogOpen(true)
   }
 
   return (
@@ -405,7 +419,7 @@ export default function JobDetailsPage() {
               </div>
 
               <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" className="flex-1">
+                <Button variant="outline" className="flex-1" onClick={handleEdit}>
                   <PencilIcon className="mr-2 h-4 w-4" />
                   Edit Job
                 </Button>
@@ -449,6 +463,13 @@ export default function JobDetailsPage() {
           </CardContent>
         </Card>
       </motion.div>
+      <CreateJobDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onJobCreated={fetchJob}
+        editJob={job}
+        mode="edit"
+      />
     </div>
   )
 }

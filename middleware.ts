@@ -18,22 +18,11 @@ export async function middleware(request: NextRequest) {
   const publicPaths = ["/", "/login", "/terms", "/privacy", "/buy-service"]
   const isPublicPath = publicPaths.includes(pathname)
 
-  // Get auth cookie
-  const authCookie = request.cookies.get("auth_token")
-  const hasAuthCookie = !!authCookie?.value
+  console.log(`[Middleware] Path: ${pathname}, IsPublic: ${isPublicPath}`)
 
-  // If accessing a protected route without auth cookie, redirect to login
-  if (!isPublicPath && !hasAuthCookie) {
-    const loginUrl = new URL("/login", request.url)
-    loginUrl.searchParams.set("from", pathname)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  // If accessing login page with auth cookie, redirect to dashboard
-  if (pathname === "/login" && hasAuthCookie) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
-  }
-
+  // Since we're using localStorage for auth state, we can't check auth in middleware
+  // Let all requests through and handle auth on the client side
+  console.log(`[Middleware] Using localStorage auth - allowing all requests`)
   return NextResponse.next()
 }
 

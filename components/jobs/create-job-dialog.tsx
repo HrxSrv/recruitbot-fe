@@ -1,6 +1,6 @@
 "use client"
 import { Grip, Plus, X, DollarSign, Calendar } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { createJob, type CreateJobData, type JobQuestion } from "@/lib/api/jobs"
+import { createJob, type CreateJobData, type JobQuestion, publishJob, type Job } from "@/lib/api/jobs"
 import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
@@ -63,10 +63,14 @@ export function CreateJobDialog({
   open,
   onOpenChange,
   onJobCreated,
+  editJob,
+  mode = "create",
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onJobCreated?: () => void
+  editJob?: Job
+  mode?: "create" | "edit"
 }) {
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -92,6 +96,28 @@ export function CreateJobDialog({
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (editJob && mode === "edit") {
+      setFormData({
+        title: editJob.title,
+        description: editJob.description,
+        location: editJob.location,
+        job_type: editJob.job_type,
+        department: editJob.department || "",
+        experience_level: editJob.experience_level,
+        remote_allowed: editJob.remote_allowed,
+        requirements: editJob.requirements,
+        questions: editJob.questions,
+        salary_range: editJob.salary_range || {
+          min_salary: undefined,
+          max_salary: undefined,
+          currency: "USD",
+        },
+        application_deadline: editJob.application_deadline || "",
+      })
+    }
+  }, [editJob, mode])
 
   const validateStep = (step: number) => {
     const newErrors: Record<string, string> = {}
@@ -191,7 +217,7 @@ export function CreateJobDialog({
 
       const jobData: CreateJobData = {
         ...formData,
-        status,
+        status: "draft", // Always create as draft first
         requirements: formData.requirements.filter((req) => req.trim()),
         questions: formData.questions.filter((q) => q.question.trim() && q.ideal_answer.trim()),
         salary_range:
@@ -200,7 +226,13 @@ export function CreateJobDialog({
         department: formData.department || undefined,
       }
 
-      await createJob(jobData)
+      // Create the job first
+      const createdJob = await createJob(jobData)
+
+      // If status should be active, publish it
+      if (status === "active") {
+        await publishJob(createdJob.id)
+      }
 
       toast({
         title: "Success",
@@ -269,7 +301,7 @@ export function CreateJobDialog({
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-4 p-6">
           <DialogHeader className="flex-none">
-            <DialogTitle className="text-2xl">Create New Job</DialogTitle>
+            <DialogTitle className="text-2xl">{mode === "edit" ? "Edit Job" : "Create New Job"}</DialogTitle>
             <DialogDescription>Fill out the job details in this multi-step form</DialogDescription>
           </DialogHeader>
 
@@ -658,7 +690,11 @@ export function CreateJobDialog({
                     {currentStep === 4 ? "Publishing..." : "Loading..."}
                   </>
                 ) : currentStep === 4 ? (
-                  "Publish Job"
+                  mode === "edit" ? (
+                    "Update Job"
+                  ) : (
+                    "Publish Job"
+                  )
                 ) : (
                   "Next"
                 )}
