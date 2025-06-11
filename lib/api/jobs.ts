@@ -292,3 +292,39 @@ export async function publishJob(id: string): Promise<void> {
     throw error
   }
 }
+export async function pauseJob(id: string): Promise<void> {
+  try {
+    const response = await fetchWithAutoRefresh(`${API_BASE_URL}/jobs/${id}/pause`, {
+      method: "POST",
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Authentication required. Please log in again.")
+      }
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || `Failed to pause job: ${response.statusText}`)
+    }
+  } catch (error) {
+    console.error("Error pausing job:", error)
+    throw error
+  }
+}
+export async function resumeJob(id: string): Promise<void> {
+  try {
+    const response = await fetchWithAutoRefresh(`${API_BASE_URL}/jobs/${id}/resume`, {
+      method: "POST",
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Authentication required. Please log in again.")
+      }
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || `Failed to resume job: ${response.statusText}`)
+    }
+  } catch (error) {
+    console.error("Error pausing job:", error)
+    throw error
+  }
+}

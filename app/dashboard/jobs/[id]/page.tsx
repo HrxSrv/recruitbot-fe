@@ -14,7 +14,7 @@ import {
   Trash2Icon,
   Play,
   Pause,
-  Archive,
+  Upload,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useState, useEffect } from "react"
@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { type Job, getJob, updateJob, deleteJob, publishJob } from "@/lib/api/jobs"
+import { type Job, getJob, updateJob, deleteJob, publishJob, pauseJob, resumeJob } from "@/lib/api/jobs"
 import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
@@ -37,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { CreateJobDialog } from "@/components/jobs/create-job-dialog"
+import { ResumeUploadWizard } from "@/components/candidates/resume-upload-wizard"
 
 export default function JobDetailsPage() {
   const params = useParams()
@@ -47,6 +48,7 @@ export default function JobDetailsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const { toast } = useToast()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [uploadResumeDialogOpen, setUploadResumeDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchJob()
@@ -121,6 +123,55 @@ export default function JobDetailsPage() {
     } finally {
       setActionLoading(null)
     }
+  }
+  const handlePause = async () => {
+    if (!job) return
+
+    try {
+      setActionLoading("pause")
+      await pauseJob(job.id)
+      toast({
+        title: "Success",
+        description: "Job paused successfully",
+      })
+      router.push("/dashboard/jobs")
+    } catch (error: any) {
+      console.error("Error pausing job:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to pause job",
+        variant: "destructive",
+      })
+    } finally {
+      setActionLoading(null)
+    }
+  }
+  const handleResume = async () => {
+    if (!job) return
+
+    try {
+      setActionLoading("resume")
+      await resumeJob(job.id)
+      toast({
+        title: "Success",
+        description: "Job resumed successfully",
+      })
+      router.push("/dashboard/jobs")
+    } catch (error: any) {
+      console.error("Error resuming job:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resume job",
+        variant: "destructive",
+      })
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleUploadResumeComplete = () => {
+    // Refresh job data to update application count
+    fetchJob()
   }
 
   if (loading) {
@@ -209,18 +260,25 @@ export default function JobDetailsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.push("/dashboard/jobs")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Jobs
         </Button>
-        <Button
-          onClick={() => router.push(`/dashboard/candidates?jobId=${jobId}`)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Users className="mr-2 h-4 w-4" />
-          View Applications ({job.application_count})
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={() => router.push(`/dashboard/candidates?jobId=${jobId}`)} variant="outline">
+            <Users className="mr-2 h-4 w-4" />
+            View Applications ({job.application_count})
+          </Button>
+
+          <Button
+            onClick={() => setUploadResumeDialogOpen(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Resume
+          </Button>
+        </div>
       </div>
 
       <motion.div
@@ -358,11 +416,7 @@ export default function JobDetailsPage() {
                 )}
 
                 {job.status === "active" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleStatusChange("paused")}
-                    disabled={actionLoading === "paused"}
-                  >
+                  <Button variant="outline" onClick={handlePause} disabled={actionLoading === "paused"}>
                     {actionLoading === "paused" ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
@@ -378,11 +432,7 @@ export default function JobDetailsPage() {
                 )}
 
                 {job.status === "paused" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleStatusChange("active")}
-                    disabled={actionLoading === "active"}
-                  >
+                  <Button variant="outline" onClick={handleResume} disabled={actionLoading === "active"}>
                     {actionLoading === "active" ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
@@ -396,26 +446,6 @@ export default function JobDetailsPage() {
                     )}
                   </Button>
                 )}
-
-                {/* {(job.status === "active" || job.status === "paused") && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleStatusChange("closed")}
-                    disabled={actionLoading === "closed"}
-                  >
-                    {actionLoading === "closed" ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                        Closing...
-                      </>
-                    ) : (
-                      <>
-                        <Archive className="mr-2 h-4 w-4" />
-                        Close Job
-                      </>
-                    )}
-                  </Button>
-                )} */}
               </div>
 
               <div className="flex gap-2 flex-wrap">
@@ -463,6 +493,18 @@ export default function JobDetailsPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Resume Upload Wizard */}
+      <ResumeUploadWizard
+        open={uploadResumeDialogOpen}
+        onOpenChange={setUploadResumeDialogOpen}
+        onUploadComplete={handleUploadResumeComplete}
+        jobId={jobId}
+        jobTitle={job.title}
+        mode="job-specific"
+      />
+
+      {/* Edit Job Dialog */}
       <CreateJobDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
