@@ -397,7 +397,7 @@ export default function JobDetailsPage() {
                   </Button>
                 )}
 
-                {(job.status === "active" || job.status === "paused") && (
+                {/* {(job.status === "active" || job.status === "paused") && (
                   <Button
                     variant="outline"
                     onClick={() => handleStatusChange("closed")}
@@ -415,7 +415,7 @@ export default function JobDetailsPage() {
                       </>
                     )}
                   </Button>
-                )}
+                )} */}
               </div>
 
               <div className="flex gap-2 flex-wrap">

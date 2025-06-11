@@ -2,7 +2,7 @@
 
 import { BriefcaseIcon, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "./theme-toggle"
+// import { ThemeToggle } from "./theme-toggle"
 import { UserMenu } from "./user-menu"
 import { useAuth } from "@/lib/context/auth-context"
 import Link from "next/link"
@@ -63,7 +63,7 @@ export function TopNavbar({ onOpenSidebar }: TopNavbarProps) {
       {/* <SearchBar/> */}
       <div className="ml-auto flex items-center gap-4 relative z-10">
         {/* <NotificationsMenu /> */}
-        <ThemeToggle />
+        {/* <ThemeToggle /> */}
         <UserMenu />
       </div>
     </header>

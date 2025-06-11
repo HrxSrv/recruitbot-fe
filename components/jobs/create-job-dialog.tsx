@@ -319,7 +319,7 @@ export function CreateJobDialog({
                   {index < steps.length - 1 && (
                     <div
                       className={cn(
-                        "absolute left-[calc(50%+12px)] w-[120px] right-[calc(-50%+12px)] top-4 h-px -translate-y-1/2 bg-border transition-colors duration-200",
+                        "absolute left-[calc(50%+12px)] w-[170px] right-[calc(-50%+12px)] top-4 h-px -translate-y-1/2 bg-border transition-colors duration-200",
                         {
                           "bg-primary": currentStep > step.id,
                         },
