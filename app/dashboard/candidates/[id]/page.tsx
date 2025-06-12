@@ -458,15 +458,15 @@ export default function CandidateProfilePage() {
           </Link>
           <div className="flex-1" />
           <div className="flex gap-2">
-            <Button
+            {/* <Button
               variant="outline"
               onClick={() => setJobAssociationDialogOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Briefcase className="h-4 w-4 mr-2" />
               Associate with Job
-            </Button>
-            <Button className="bg-gray-800 hover:bg-gray-700 text-white" onClick={handleDownloadResume}>
+            </Button> */}
+            <Button variant="outline" onClick={handleDownloadResume}>
               <Download className="h-4 w-4 mr-2" />
               Download Resume
             </Button>
@@ -695,17 +695,17 @@ export default function CandidateProfilePage() {
                       {candidate.created_at && (
                         <div>
                           <p className="text-sm text-gray-500 mb-1">Created At</p>
-                          <p className="font-medium">{new Date(candidate.created_at).toLocaleString()}</p>
+                          <p className="font-light">{new Date(candidate.created_at).toLocaleString()}</p>
                         </div>
                       )}
                       <div>
                         <p className="text-sm text-gray-500 mb-1">Experience</p>
-                        <p className="font-medium">{candidate.resume_analysis.experience_years} years</p>
+                        <p className="font-light">{candidate.resume_analysis.experience_years} years</p>
                       </div>
                       {candidate.resume_analysis.education && (
                         <div>
                           <p className="text-sm text-gray-500 mb-1">Education</p>
-                          <p className="font-medium">{candidate.resume_analysis.education}</p>
+                          <p className="font-light">{candidate.resume_analysis.education}</p>
                         </div>
                       )}
                     </div>
@@ -922,7 +922,7 @@ export default function CandidateProfilePage() {
           )}
         </div>
 
-        {/* Job Association Dialog */}
+        {/* Job Association Dialog not available for now*/}
         <JobAssociationDialog
           open={jobAssociationDialogOpen}
           onOpenChange={setJobAssociationDialogOpen}

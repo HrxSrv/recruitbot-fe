@@ -139,16 +139,16 @@ export function ScheduleCallDialog({
                     Screening Call
                   </div>
                 </SelectItem>
-                <SelectItem value={CallType.TECHNICAL}>
+                <SelectItem value={CallType.INTERVIEW}>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-purple-500" />
-                    Technical Interview
+                    Interview
                   </div>
                 </SelectItem>
-                <SelectItem value={CallType.FINAL}>
+                <SelectItem value={CallType.FOLLOW_UP}>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
-                    Final Interview
+                    Follow Up
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -202,7 +202,7 @@ export function ScheduleCallDialog({
               </div>
               <div className="flex justify-between">
                 <span>Call Type:</span>
-                <span className="font-medium capitalize">{callType.replace("_", " ")}</span>
+                <span className="font-medium capitalize">{callType?.replace(/_/g, " ") || "N/A"}</span>
               </div>
               <div className="flex justify-between">
                 <span>Time:</span>

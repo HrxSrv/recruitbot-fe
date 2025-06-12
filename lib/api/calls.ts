@@ -1,9 +1,10 @@
 import { baseUrl } from '@/lib/config'
 
+// FIX: Match your backend enum values exactly
 export enum CallType {
   SCREENING = "screening",
-  TECHNICAL = "technical",
-  FINAL = "final",
+  INTERVIEW = "interview",  // Changed from "technical" to "interview"
+  FOLLOW_UP = "follow_up",  // Changed from "final" to "follow_up"
 }
 
 export enum CallStatus {
@@ -12,6 +13,7 @@ export enum CallStatus {
   COMPLETED = "completed",
   CANCELLED = "cancelled",
   NO_SHOW = "no_show",
+  FAILED = "failed",  // Added to match backend
 }
 
 export interface ScheduleCallRequest {
@@ -33,6 +35,13 @@ export interface ScheduleCallResponse {
     call_type: CallType
     status: CallStatus
     scheduled_by: string
+    vapi_assistant_id?: string
+    assistant_status?: string
+  }
+  assistant_info?: {
+    has_assistant: boolean
+    assistant_id?: string
+    message: string
   }
   next_steps: string[]
   pipeline_status: string
@@ -164,29 +173,52 @@ async function fetchWithAutoRefresh(url: string, options: RequestInit = {}, time
 }
 
 export async function scheduleCall(request: ScheduleCallRequest): Promise<ScheduleCallResponse> {
-  // Build URL with query parameters like your curl command
+  // Build URL with ALL parameters as query parameters
   const searchParams = new URLSearchParams({
     candidate_id: request.candidate_id,
     job_id: request.job_id,
   })
   
-  // Prepare JSON body (excluding candidate_id and job_id since they're in URL)
-  const requestBody: any = {}
-  if (request.scheduled_time) requestBody.scheduled_time = request.scheduled_time
-  if (request.call_type) requestBody.call_type = request.call_type
-  if (request.notes) requestBody.notes = request.notes
+  // Add optional parameters to query string if they exist
+  if (request.scheduled_time) {
+    console.log("Sending scheduled_time:", request.scheduled_time);
+    searchParams.set('scheduled_time', request.scheduled_time)
+  }
+  if (request.call_type) {
+    console.log("Sending call_type:", request.call_type);
+    searchParams.set('call_type', request.call_type)
+  }
+  if (request.notes) {
+    console.log("Sending notes:", request.notes);
+    searchParams.set('notes', request.notes)
+  }
 
-  const response = await fetchWithAutoRefresh(`${baseUrl}/calls/schedule?${searchParams.toString()}`, {
+  const finalUrl = `${baseUrl}/calls/schedule?${searchParams.toString()}`;
+  console.log("Final request URL:", finalUrl);
+
+  // Make POST request with NO body - all data is in query parameters
+  const response = await fetchWithAutoRefresh(finalUrl, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json", // Changed from form data to JSON
+      "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify(requestBody), // Send as JSON, not form data
+    // No body needed since everything is in query parameters
   })
 
+  console.log("Response status:", response.status);
+
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
+    const errorText = await response.text();
+    console.error("Error response text:", errorText);
+    
+    let error;
+    try {
+      error = JSON.parse(errorText);
+    } catch {
+      error = { detail: errorText || "Failed to schedule call" };
+    }
+    
     throw new CallsError(error.detail || "Failed to schedule call")
   }
 
