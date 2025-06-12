@@ -1,9 +1,8 @@
 "use client"
 
-import type React from "react"
-
+import type { ReactNode } from "react"
 import { createContext, useContext, useEffect, useState } from "react"
-import { googleAuth, validateAuth, logout } from "@/lib/api/auth"
+import { googleAuth, validateAuth, logout as apiLogout, hasAuthToken } from "@/lib/api/auth"
 import { getCustomerByEmail } from "@/lib/api/customers"
 
 interface User {
@@ -32,7 +31,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  isLoading: true,
+  isLoading: false,
   isAuthenticated: false,
   isCustomerValid: false,
   isSuperAdmin: false,
@@ -40,85 +39,86 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
 })
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [initialized, setInitialized] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
 
   // Check authentication status on mount
   useEffect(() => {
-    let mounted = true
-
     const checkAuth = async () => {
       try {
-        const response = await validateAuth()
-        if (mounted) {
-          // Check if user is super admin
-          const isSuperAdmin = response.user.email === "harshitsrv2004@gmail.com"
+        setIsLoading(true)
+        console.log("[Auth Context] Starting auth check")
 
-          let customerData = null
-          if (!isSuperAdmin) {
-            // For regular users, validate customer
-            try {
-              customerData = await getCustomerByEmail(response.user.email)
-            } catch (error) {
-              console.error("Customer validation failed:", error)
-            }
-          }
-
-          const userData: User = {
-            ...response.user,
-            customer: customerData
-              ? {
-                  id: customerData.id,
-                  company_name: customerData.company_name,
-                  subscription_plan: customerData.subscription_plan,
-                  is_active: customerData.is_active,
-                }
-              : undefined,
-            isSuperAdmin,
-          }
-
-          setUser(userData)
-        }
-      } catch (error) {
-        if (mounted) {
-          setUser(null)
-        }
-      } finally {
-        if (mounted) {
+        // Check if we have a token in localStorage
+        if (!hasAuthToken()) {
+          console.log("[Auth Context] No auth token found in localStorage")
           setIsLoading(false)
-          setInitialized(true)
+          setAuthChecked(true)
+          return
         }
+
+        console.log("[Auth Context] Token found, validating with backend")
+        const response = await validateAuth()
+        console.log("[Auth Context] Auth validation successful")
+
+        // Check if user is super admin
+        const isSuperAdmin = response.user.email === "harshitsrv2004@gmail.com"
+
+        let customerData = null
+        if (!isSuperAdmin) {
+          try {
+            customerData = await getCustomerByEmail(response.user.email)
+          } catch (error) {
+            console.error("Customer validation failed:", error)
+          }
+        }
+
+        const userData: User = {
+          ...response.user,
+          customer: customerData
+            ? {
+                id: customerData.id,
+                company_name: customerData.company_name,
+                subscription_plan: customerData.subscription_plan,
+                is_active: customerData.is_active,
+              }
+            : undefined,
+          isSuperAdmin,
+        }
+
+        setUser(userData)
+        console.log("[Auth Context] User authenticated:", userData.email)
+      } catch (error) {
+        console.log("[Auth Context] Auth validation failed:", error)
+        setUser(null)
+        // Token is already cleared by validateAuth if invalid
+      } finally {
+        setIsLoading(false)
+        setAuthChecked(true)
       }
     }
 
-    // Only check auth on initial load
-    if (!initialized) {
-      checkAuth()
-    }
-
-    return () => {
-      mounted = false
-    }
-  }, [initialized]) // Only run when initialized changes
+    checkAuth()
+  }, [])
 
   const handleGoogleLogin = async (response: { credential: string }) => {
     try {
       setIsLoading(true)
+      console.log("[Auth Context] Starting Google login")
       const authResponse = await googleAuth(response)
+      console.log("[Auth Context] Google auth successful")
 
       // Check if user is super admin
       const isSuperAdmin = authResponse.user.email === "harshitsrv2004@gmail.com"
 
       let customerData = null
-      let isValidCustomer = isSuperAdmin // Super admin is always valid
+      let isValidCustomer = isSuperAdmin
 
       if (!isSuperAdmin) {
-        // For regular users, check if they have a customer record
         try {
           customerData = await getCustomerByEmail(authResponse.user.email)
-          console.log("Customer data:", customerData);
           isValidCustomer = customerData !== null && customerData.is_active
         } catch (error) {
           console.error("Customer validation failed:", error)
@@ -140,15 +140,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(userData)
+      console.log("[Auth Context] Login complete, redirecting")
 
-      // Redirect based on customer validation
+      // Immediate redirect since we're using localStorage
       if (isValidCustomer) {
-        window.location.replace("/dashboard")
+        window.location.href = "/dashboard"
       } else {
-        window.location.replace("/buy-service")
+        window.location.href = "/buy-service"
       }
     } catch (error) {
-      console.error("Login failed:", error)
+      console.error("[Auth Context] Login failed:", error)
       throw error
     } finally {
       setIsLoading(false)
@@ -158,18 +159,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     try {
       setIsLoading(true)
-      await logout()
-      // Clear all auth state
+      console.log("[Auth Context] Starting logout")
+      await apiLogout()
       setUser(null)
-      setInitialized(false) // Allow re-initialization on next mount
-      // Use Next.js router for client-side navigation
-      window.location.replace("/login")
+      
+      console.log("[Auth Context] Logout complete")
+      window.location.href = "/"
     } catch (error) {
-      console.error("Logout failed:", error)
-      // Even if logout fails on server, clear client state
+      console.error("[Auth Context] Logout failed:", error)
       setUser(null)
-      setInitialized(false)
-      window.location.replace("/login")
+      window.location.href = "/"
     } finally {
       setIsLoading(false)
     }
