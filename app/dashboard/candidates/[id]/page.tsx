@@ -37,8 +37,9 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
-import { getCandidate, downloadResume, type Candidate, type CallQA } from "@/lib/api/candidates"
+import { getCandidate, downloadResume, type Candidate, type CallQA, type JobApplication } from "@/lib/api/candidates"
 import { JobAssociationDialog } from "@/components/candidates/job-association-dialog"
+import { ScheduleCallDialog } from "@/components/candidates/schedule-call-dialog"
 
 // Interview Wizard Component with failsafes
 function InterviewWizard({
@@ -268,6 +269,8 @@ export default function CandidateProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
   const [jobAssociationDialogOpen, setJobAssociationDialogOpen] = useState(false)
+  const [scheduleCallDialogOpen, setScheduleCallDialogOpen] = useState(false)
+  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null)
 
   useEffect(() => {
     const fetchCandidate = async () => {
@@ -855,9 +858,15 @@ export default function CandidateProfilePage() {
                             <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                             <h3 className="text-lg font-medium text-gray-900 mb-2">No Interview Conducted</h3>
                             <p className="text-gray-500 mb-4">This application hasn't been interviewed yet.</p>
-                            <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                              <PlayCircle className="h-4 w-4 mr-2" />
-                              Schedule Interview
+                            <Button
+                              onClick={() => {
+                                setSelectedApplication(application)
+                                setScheduleCallDialogOpen(true)
+                              }}
+                              className="bg-purple-600 hover:bg-purple-700 text-white"
+                            >
+                              <Phone className="h-4 w-4 mr-2" />
+                              Schedule Call
                             </Button>
                           </CardContent>
                         </Card>
@@ -924,6 +933,25 @@ export default function CandidateProfilePage() {
 
         {/* Interview Wizard Modal */}
         <InterviewWizard isOpen={isInterviewWizardOpen} onClose={closeInterviewWizard} interview={selectedInterview} />
+
+        {/* Schedule Call Dialog */}
+        {selectedApplication && (
+          <ScheduleCallDialog
+            open={scheduleCallDialogOpen}
+            onOpenChange={setScheduleCallDialogOpen}
+            candidateId={candidateId}
+            candidateName={candidate.personal_info.name}
+            jobId={selectedApplication.job_id}
+            jobTitle={`Job ${selectedApplication.job_id}`} // You might want to fetch actual job title
+            onScheduleComplete={() => {
+              // Optionally refresh candidate data or show success message
+              toast({
+                title: "Success",
+                description: "Call has been scheduled successfully",
+              })
+            }}
+          />
+        )}
       </motion.div>
     </div>
   )

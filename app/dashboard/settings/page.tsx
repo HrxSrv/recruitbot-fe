@@ -2,57 +2,23 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { motion } from "framer-motion"
-import {
-  Clock,
-  Calendar,
-  Phone,
-  CreditCard,
-  Bell,
-  Shield,
-  ChevronDown,
-  Plus,
-  X,
-} from "lucide-react"
+import { Clock, Calendar, Phone, CreditCard, Plus, X, Bot } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { AssistantsManagement } from "@/components/assistants/assistants-management"
 
 export default function SettingsPage() {
-  const [timeWindows, setTimeWindows] = useState([
-    { start: "09:00", end: "17:00" },
-  ])
+  const [timeWindows, setTimeWindows] = useState([{ start: "09:00", end: "17:00" }])
 
-  const [selectedDays, setSelectedDays] = useState([
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-  ])
+  const [selectedDays, setSelectedDays] = useState(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
 
-  const days = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ]
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
   const timezones = [
     "UTC",
@@ -76,11 +42,9 @@ export default function SettingsPage() {
     <div className="container max-w-7xl mx-auto p-6">
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your settings and preferences.
-        </p>
-      </div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">Manage your settings and preferences.</p>
+        </div>
 
         {/* Timezone Settings */}
         <Card className="border shadow-sm">
@@ -151,11 +115,7 @@ export default function SettingsPage() {
                         }}
                       />
                       {index > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeTimeWindow(index)}
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => removeTimeWindow(index)}>
                           <X className="h-4 w-4" />
                         </Button>
                       )}
@@ -163,12 +123,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               ))}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addTimeWindow}
-                className="mt-2"
-              >
+              <Button variant="outline" size="sm" onClick={addTimeWindow} className="mt-2">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Time Window
               </Button>
@@ -213,10 +168,22 @@ export default function SettingsPage() {
               <Label>Maximum Calls Per Candidate</Label>
               <Input type="number" defaultValue={3} min={1} max={10} />
               <p className="text-sm text-muted-foreground">
-                Set the maximum number of calls allowed per candidate during the
-                interview process.
+                Set the maximum number of calls allowed per candidate during the interview process.
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Assistants Management */}
+        <Card className="border shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-medium flex items-center gap-2">
+              <Bot className="h-5 w-5 text-gray-600" />
+              AI Interview Assistants
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AssistantsManagement />
           </CardContent>
         </Card>
 
@@ -234,9 +201,7 @@ export default function SettingsPage() {
                 <div>
                   <p className="text-sm font-medium">Available Credits</p>
                   <p className="text-3xl font-bold mt-1">2,500</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Credits renew on the 1st of each month
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">Credits renew on the 1st of each month</p>
                 </div>
                 <Button>Top Up Credits</Button>
               </div>

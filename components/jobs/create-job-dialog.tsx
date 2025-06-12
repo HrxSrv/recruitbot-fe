@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { createJob, type CreateJobData, type JobQuestion, publishJob, type Job } from "@/lib/api/jobs"
+import { createJob, type CreateJobData, type JobQuestion, publishJob,updateJob, type Job } from "@/lib/api/jobs"
 import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
@@ -192,67 +192,79 @@ export function CreateJobDialog({
   }
 
   const handleSubmit = async (status: "draft" | "active" = "active") => {
-    try {
-      setLoading(true)
+  try {
+    setLoading(true)
 
-      // Validate required fields for active jobs
-      if (status === "active") {
-        const result = jobSchema.safeParse(formData)
-        if (!result.success) {
-          const fieldErrors: Record<string, string> = {}
-          result.error.errors.forEach((error) => {
-            if (error.path.length > 0) {
-              fieldErrors[error.path[0] as string] = error.message
-            }
-          })
-          setErrors(fieldErrors)
-          toast({
-            title: "Validation Error",
-            description: "Please fix the errors before publishing the job.",
-            variant: "destructive",
-          })
-          return
-        }
+    // Validate required fields for active jobs
+    if (status === "active") {
+      const result = jobSchema.safeParse(formData)
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {}
+        result.error.errors.forEach((error) => {
+          if (error.path.length > 0) {
+            fieldErrors[error.path[0] as string] = error.message
+          }
+        })
+        setErrors(fieldErrors)
+        toast({
+          title: "Validation Error",
+          description: "Please fix the errors before publishing the job.",
+          variant: "destructive",
+        })
+        return
       }
+    }
 
-      const jobData: CreateJobData = {
-        ...formData,
+    const jobData: CreateJobData = {
+      ...formData,
+      status: status, // Use the provided status directly
+      requirements: formData.requirements.filter((req) => req.trim()),
+      questions: formData.questions.filter((q) => q.question.trim() && q.ideal_answer.trim()),
+      salary_range:
+        formData.salary_range?.min_salary || formData.salary_range?.max_salary ? formData.salary_range : undefined,
+      application_deadline: formData.application_deadline || undefined,
+      department: formData.department || undefined,
+    }
+
+    let updatedJob: Job
+
+    if (mode === "edit" && editJob) {
+      // Update existing job
+      updatedJob = await updateJob(editJob.id, jobData)
+    } else {
+      // Create new job
+      updatedJob = await createJob({
+        ...jobData,
         status: "draft", // Always create as draft first
-        requirements: formData.requirements.filter((req) => req.trim()),
-        questions: formData.questions.filter((q) => q.question.trim() && q.ideal_answer.trim()),
-        salary_range:
-          formData.salary_range?.min_salary || formData.salary_range?.max_salary ? formData.salary_range : undefined,
-        application_deadline: formData.application_deadline || undefined,
-        department: formData.department || undefined,
-      }
-
-      // Create the job first
-      const createdJob = await createJob(jobData)
+      })
 
       // If status should be active, publish it
       if (status === "active") {
-        await publishJob(createdJob.id)
+        await publishJob(updatedJob.id)
       }
-
-      toast({
-        title: "Success",
-        description: `Job ${status === "draft" ? "saved as draft" : "created and published"} successfully!`,
-      })
-
-      onOpenChange(false)
-      resetForm()
-      onJobCreated?.()
-    } catch (error: any) {
-      console.error("Error creating job:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create job. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
     }
+
+    toast({
+      title: "Success",
+      description: mode === "edit" 
+        ? "Job updated successfully!" 
+        : `Job ${status === "draft" ? "saved as draft" : "created and published"} successfully!`,
+    })
+
+    onOpenChange(false)
+    resetForm()
+    onJobCreated?.()
+  } catch (error: any) {
+    console.error(`Error ${mode === "edit" ? "updating" : "creating"} job:`, error)
+    toast({
+      title: "Error",
+      description: error.message || `Failed to ${mode === "edit" ? "update" : "create"} job. Please try again.`,
+      variant: "destructive",
+    })
+  } finally {
+    setLoading(false)
   }
+}
 
   const addRequirement = () => {
     setFormData((prev) => ({

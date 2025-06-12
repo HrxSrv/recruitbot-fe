@@ -46,7 +46,7 @@ export function ResumeAnalysisButton({ candidateId, jobId, onAnalysisComplete }:
       onClick={handleAnalyzeResume}
       disabled={isAnalyzing}
       size="sm"
-      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+      className="h-8 text-xs"
     >
       {isAnalyzing ? (
         <>
