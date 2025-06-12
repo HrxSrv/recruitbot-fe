@@ -263,23 +263,7 @@ For support and questions:
 - Contact the development team
 - Check the documentation wiki
 
-## 🗺️ Roadmap
 
-### Upcoming Features
-- [ ] Real-time notifications
-- [ ] Advanced analytics dashboard
-- [ ] Bulk operations for candidates
-- [ ] Calendar integration
-- [ ] Email templates
-- [ ] Advanced search and filtering
-- [ ] Export functionality
-- [ ] Mobile app
-
-### Version History
-- **v1.0.0** - Initial release with core functionality
-- **v1.1.0** - Added AI assistant management
-- **v1.2.0** - Enhanced resume analysis features
-- **v1.3.0** - Improved UI/UX with glass effects
 
 ---
 
