@@ -37,7 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { CreateJobDialog } from "@/components/jobs/create-job-dialog"
-import { ResumeUploadWizard } from "@/components/candidates/resume-upload-wizard"
+import { BulkUploadDialog } from "@/components/candidates/bulk-upload-resumes"
 
 export default function JobDetailsPage() {
   const params = useParams()
@@ -48,7 +48,7 @@ export default function JobDetailsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const { toast } = useToast()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [uploadResumeDialogOpen, setUploadResumeDialogOpen] = useState(false)
+  const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchJob()
@@ -272,11 +272,11 @@ export default function JobDetailsPage() {
           </Button>
 
           <Button
-            onClick={() => setUploadResumeDialogOpen(true)}
+            onClick={() => setBulkUploadDialogOpen(true)}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Upload className="mr-2 h-4 w-4" />
-            Upload Resume
+            Add Candidates
           </Button>
         </div>
       </div>
@@ -494,14 +494,13 @@ export default function JobDetailsPage() {
         </Card>
       </motion.div>
 
-      {/* Resume Upload Wizard */}
-      <ResumeUploadWizard
-        open={uploadResumeDialogOpen}
-        onOpenChange={setUploadResumeDialogOpen}
-        onUploadComplete={handleUploadResumeComplete}
+      {/* Bulk Upload Dialog */}
+      <BulkUploadDialog
+        open={bulkUploadDialogOpen}
+        onOpenChange={setBulkUploadDialogOpen}
         jobId={jobId}
         jobTitle={job.title}
-        mode="job-specific"
+        onUploadComplete={handleUploadResumeComplete}
       />
 
       {/* Edit Job Dialog */}
