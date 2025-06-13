@@ -36,7 +36,7 @@ A comprehensive HR dashboard for managing recruitment, candidates, and hiring pr
 
 ## 📁 Project Structure
 
-\`\`\`
+```
 ├── app/                          # Next.js App Router pages
 │   ├── dashboard/               # Protected dashboard routes
 │   │   ├── candidates/         # Candidate management pages
@@ -61,7 +61,7 @@ A comprehensive HR dashboard for managing recruitment, candidates, and hiring pr
 │   ├── glass-effects.css # Glass morphism effects
 │   └── components.css   # Component-specific styles
 └── middleware.ts        # Next.js middleware
-\`\`\`
+```
 
 ## 🚀 Getting Started
 
@@ -75,31 +75,31 @@ A comprehensive HR dashboard for managing recruitment, candidates, and hiring pr
 ### Installation
 
 1. **Clone the repository**
-   \`\`\`bash
+   ```bash
    git clone <repository-url>
    cd talenthub-frontend
-   \`\`\`
+   ```
 
 2. **Install dependencies**
-   \`\`\`bash
+   ```bash
    npm install
    # or
    yarn install
-   \`\`\`
+   ```
 
 3. **Environment Setup**
    Create a `.env.local` file in the root directory:
-   \`\`\`env
+   ```env
    NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
    NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
-   \`\`\`
+   ```
 
 4. **Run the development server**
-   \`\`\`bash
+   ```bash
    npm run dev
    # or
    yarn dev
-   \`\`\`
+   ```
 
 5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
@@ -157,33 +157,33 @@ The application uses Google OAuth 2.0 for authentication:
 
 #### Resume Upload Wizard
 Multi-step wizard for uploading candidate resumes:
-\`\`\`typescript
+```typescript
 <ResumeUploadWizard
   mode="job-specific" // or "general"
   jobId="job-123"
   onSuccess={(result) => console.log(result)}
   onCancel={() => setOpen(false)}
 />
-\`\`\`
+```
 
 #### Job Association Dialog
 Dialog for associating candidates with jobs:
-\`\`\`typescript
+```typescript
 <JobAssociationDialog
   candidateId="candidate-123"
   onAssociated={() => refreshData()}
 />
-\`\`\`
+```
 
 #### Schedule Call Dialog
 Dialog for scheduling candidate interviews:
-\`\`\`typescript
+```typescript
 <ScheduleCallDialog
   candidateId="candidate-123"
   jobId="job-123"
   onScheduled={() => refreshCalls()}
 />
-\`\`\`
+```
 
 ### Glass Morphism Effects
 The application features modern glass morphism effects:
@@ -201,59 +201,24 @@ Custom colors and animations defined in `tailwind.config.ts`:
 - Custom animations
 - Responsive breakpoints
 
-### Theme System
-- Light/dark mode support
-- System preference detection
-- Persistent theme storage
-- Smooth transitions
-
-## 📱 Responsive Design
-
-The application is fully responsive with breakpoints:
-- **Mobile**: < 768px
-- **Tablet**: 768px - 1024px
-- **Desktop**: > 1024px
-
-Key responsive features:
-- Collapsible sidebar on mobile
-- Adaptive grid layouts
-- Touch-friendly interactions
-- Optimized typography scaling
 
 ## 🚀 Deployment
 
 ### Build for Production
-\`\`\`bash
+```bash
 npm run build
 npm start
-\`\`\`
+```
 
 ### Environment Variables for Production
-\`\`\`env
+```env
 NEXT_PUBLIC_API_BASE_URL=https://your-api-domain.com/api/v1
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-production-google-client-id
-\`\`\`
+```
 
-### Deployment Platforms
-- **Vercel** (Recommended for Next.js)
-- **Netlify**
-- **AWS Amplify**
-- **Docker** containers
 
-## 🧪 Testing
 
-### Running Tests
-\`\`\`bash
-npm run test
-# or
-yarn test
-\`\`\`
 
-### Test Structure
-- Unit tests for utility functions
-- Component testing with React Testing Library
-- API integration tests
-- E2E tests with Playwright
 
 ## 🔍 Troubleshooting
 
@@ -276,17 +241,10 @@ yarn test
 
 ### Debug Mode
 Enable debug logging by setting:
-\`\`\`env
+```env
 NODE_ENV=development
-\`\`\`
+```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ### Code Style
 - Use TypeScript for all new code
@@ -305,23 +263,7 @@ For support and questions:
 - Contact the development team
 - Check the documentation wiki
 
-## 🗺️ Roadmap
 
-### Upcoming Features
-- [ ] Real-time notifications
-- [ ] Advanced analytics dashboard
-- [ ] Bulk operations for candidates
-- [ ] Calendar integration
-- [ ] Email templates
-- [ ] Advanced search and filtering
-- [ ] Export functionality
-- [ ] Mobile app
-
-### Version History
-- **v1.0.0** - Initial release with core functionality
-- **v1.1.0** - Added AI assistant management
-- **v1.2.0** - Enhanced resume analysis features
-- **v1.3.0** - Improved UI/UX with glass effects
 
 ---
 
