@@ -27,7 +27,7 @@ import {
 const jobSchema = z.object({
   title: z.string().min(1, "Job title is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  location: z.string().min(1, "Location is required"),
+  location: z.string().optional(),
   job_type: z.enum(["full_time", "part_time", "contract", "internship"]),
   department: z.string().optional(),
   experience_level: z.enum(["entry", "mid", "senior"]).optional(),
@@ -56,7 +56,6 @@ const steps = [
   { id: 1, name: "Basic Info" },
   { id: 2, name: "Requirements" },
   { id: 3, name: "Questions" },
-  { id: 4, name: "Details" },
 ]
 
 export function CreateJobDialog({
@@ -126,7 +125,7 @@ export function CreateJobDialog({
       if (!formData.title.trim()) newErrors.title = "Job title is required"
       if (!formData.description.trim()) newErrors.description = "Description is required"
       if (formData.description.length < 10) newErrors.description = "Description must be at least 10 characters"
-      if (!formData.location.trim()) newErrors.location = "Location is required"
+      
     }
 
     setErrors(newErrors)
@@ -134,7 +133,7 @@ export function CreateJobDialog({
   }
 
   const handleNext = () => {
-    if (validateStep(currentStep) && currentStep < 4) {
+    if (validateStep(currentStep) && currentStep < 3) {
       setCurrentStep((prev) => prev + 1)
     }
   }
@@ -331,7 +330,7 @@ export function CreateJobDialog({
                   {index < steps.length - 1 && (
                     <div
                       className={cn(
-                        "absolute left-[calc(50%+12px)] w-[170px] right-[calc(-50%+12px)] top-4 h-px -translate-y-1/2 bg-border transition-colors duration-200",
+                        "absolute left-[calc(50%+12px)] w-[250px] right-[calc(-50%+12px)] top-4 h-px -translate-y-1/2 bg-border transition-colors duration-200",
                         {
                           "bg-primary": currentStep > step.id,
                         },
@@ -391,7 +390,7 @@ export function CreateJobDialog({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location *</Label>
+                    <Label htmlFor="location">Location </Label>
                     <Input
                       id="location"
                       placeholder="e.g., San Francisco, CA"
@@ -460,6 +459,7 @@ export function CreateJobDialog({
                   />
                   <Label htmlFor="remote_allowed">Remote work allowed</Label>
                 </div>
+
               </div>
             )}
 
@@ -551,109 +551,6 @@ export function CreateJobDialog({
                 </div>
               </div>
             )}
-
-            {currentStep === 4 && (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <Label>Salary Range</Label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="min_salary">Min Salary</Label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="min_salary"
-                          type="number"
-                          placeholder="50000"
-                          className="pl-8"
-                          value={formData.salary_range?.min_salary || ""}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              salary_range: {
-                                ...prev.salary_range,
-                                min_salary: e.target.value ? Number.parseInt(e.target.value) : undefined,
-                                currency: prev.salary_range?.currency || "USD",
-                              },
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="max_salary">Max Salary</Label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="max_salary"
-                          type="number"
-                          placeholder="80000"
-                          className="pl-8"
-                          value={formData.salary_range?.max_salary || ""}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              salary_range: {
-                                ...prev.salary_range,
-                                max_salary: e.target.value ? Number.parseInt(e.target.value) : undefined,
-                                currency: prev.salary_range?.currency || "USD",
-                              },
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="currency">Currency</Label>
-                      <Select
-                        value={formData.salary_range?.currency || "USD"}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            salary_range: {
-                              ...prev.salary_range,
-                              currency: value,
-                            },
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
-                          <SelectItem value="CAD">CAD</SelectItem>
-                          <SelectItem value="AUD">AUD</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="application_deadline">Application Deadline</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="application_deadline"
-                      type="date"
-                      className="pl-8"
-                      value={formData.application_deadline}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          application_deadline: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Navigation Buttons */}
@@ -669,7 +566,7 @@ export function CreateJobDialog({
             </Button>
 
             <div className="flex gap-2">
-              {currentStep === 4 && (
+              {currentStep === 3 && (
                 <Button
                   variant="outline"
                   size="lg"
@@ -690,18 +587,18 @@ export function CreateJobDialog({
 
               <Button
                 size="lg"
-                onClick={currentStep === 4 ? () => handleSubmit("active") : handleNext}
+                onClick={currentStep === 3 ? () => handleSubmit("active") : handleNext}
                 disabled={
-                  loading || (currentStep === 1 && (!formData.title || !formData.description || !formData.location))
+                  loading || (currentStep === 1 && (!formData.title || !formData.description ))
                 }
                 className="min-w-[100px] transition-all duration-200"
               >
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {currentStep === 4 ? "Publishing..." : "Loading..."}
+                    {currentStep === 3 ? "Publishing..." : "Loading..."}
                   </>
-                ) : currentStep === 4 ? (
+                ) : currentStep === 3 ? (
                   mode === "edit" ? (
                     "Update Job"
                   ) : (

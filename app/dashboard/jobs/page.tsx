@@ -24,7 +24,7 @@ import { type Job, getJobs } from "@/lib/api/jobs"
 import { useToast } from "@/hooks/use-toast"
 
 export default function JobsPage() {
-  const [view, setView] = useState<"grid" | "table">("grid")
+  const [view, setView] = useState<"grid" | "table">("table")
   const [searchQuery, setSearchQuery] = useState("")
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [jobs, setJobs] = useState<Job[]>([])
@@ -59,6 +59,11 @@ export default function JobsPage() {
       experience_level: "all",
       remote_allowed: "all",
     })
+  }
+
+  // Handle job click navigation
+  const handleJobClick = (jobId: string) => {
+    router.push(`/dashboard/jobs/${jobId}`)
   }
 
   // Fetch jobs
@@ -308,20 +313,20 @@ export default function JobsPage() {
 
           <div className="flex items-center rounded-md border border-border/50 hover:border-primary/50 transition-colors duration-200">
             <Button
-              variant={view === "grid" ? "secondary" : "ghost"}
-              size="sm"
-              className="rounded-r-none"
-              onClick={() => setView("grid")}
-            >
-              Grid
-            </Button>
-            <Button
               variant={view === "table" ? "secondary" : "ghost"}
               size="sm"
               className="rounded-l-none"
               onClick={() => setView("table")}
             >
               Table
+            </Button>
+            <Button
+              variant={view === "grid" ? "secondary" : "ghost"}
+              size="sm"
+              className="rounded-r-none"
+              onClick={() => setView("grid")}
+            >
+              Grid
             </Button>
           </div>
 
@@ -346,7 +351,10 @@ export default function JobsPage() {
         >
           {filteredJobs.map((job) => (
             <motion.div key={job.id} variants={item}>
-              <Card className="h-full overflow-hidden border-border/60 hover:border-primary/50 hover:shadow-md transition-all duration-300">
+              <Card 
+                className="h-full overflow-hidden border-border/60 hover:border-primary/50 hover:shadow-md transition-all duration-300 cursor-pointer hover:scale-[1.02]"
+                onClick={() => handleJobClick(job.id)}
+              >
                 <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-transparent">
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-lg">{job.title}</CardTitle>
@@ -359,7 +367,7 @@ export default function JobsPage() {
                   </div>
                   <CardDescription>{job.department || "No Department"}</CardDescription>
                 </CardHeader>
-                <CardContent className="pb-2 space-y-2">
+                <CardContent className="pb-4 space-y-2">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <MapPin className="mr-1 h-4 w-4" />
                     {job.location}
@@ -380,20 +388,20 @@ export default function JobsPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center text-sm text-muted-foreground">
+                  {/* <div className="flex items-center text-sm text-muted-foreground">
                     <DollarSign className="mr-1 h-4 w-4" />
                     {formatSalary(job.salary_range)}
-                  </div>
+                  </div> */}
 
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div className="flex items-center">
                       <Users className="mr-1 h-4 w-4" />
                       {job.application_count} applications
                     </div>
-                    <div className="flex items-center">
+                    {/* <div className="flex items-center">
                       <Eye className="mr-1 h-4 w-4" />
                       {job.view_count} views
-                    </div>
+                    </div> */}
                   </div>
 
                   {job.application_deadline && (
@@ -405,16 +413,6 @@ export default function JobsPage() {
 
                   <div className="text-xs text-muted-foreground">Posted {formatDate(job.created_at)}</div>
                 </CardContent>
-                <CardFooter className="pt-2 bg-muted/30">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full hover:bg-primary/10 hover:text-primary transition-all duration-200"
-                    onClick={() => router.push(`/dashboard/jobs/${job.id}`)}
-                  >
-                    View Details
-                  </Button>
-                </CardFooter>
               </Card>
             </motion.div>
           ))}
@@ -430,14 +428,17 @@ export default function JobsPage() {
                 <TableHead className="min-w-[100px]">Type</TableHead>
                 <TableHead className="min-w-[100px]">Experience</TableHead>
                 <TableHead className="min-w-[100px]">Applications</TableHead>
-                <TableHead className="min-w-[100px]">Views</TableHead>
+                {/* <TableHead className="min-w-[100px]">Views</TableHead> */}
                 <TableHead className="min-w-[100px]">Posted</TableHead>
-                <TableHead className="min-w-[80px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredJobs.map((job) => (
-                <TableRow key={job.id} className="hover:bg-muted/30 transition-colors duration-200">
+                <TableRow 
+                  key={job.id} 
+                  className="hover:bg-muted/30 transition-colors duration-200 cursor-pointer"
+                  onClick={() => handleJobClick(job.id)}
+                >
                   <TableCell className="font-medium">{job.title}</TableCell>
                   <TableCell>
                     <Badge
@@ -462,18 +463,8 @@ export default function JobsPage() {
                       : "-"}
                   </TableCell>
                   <TableCell>{job.application_count}</TableCell>
-                  <TableCell>{job.view_count}</TableCell>
+                  {/* <TableCell>{job.view_count}</TableCell> */}
                   <TableCell>{formatDate(job.created_at)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="hover:bg-primary/10 hover:text-primary transition-colors duration-200"
-                      onClick={() => router.push(`/dashboard/jobs/${job.id}`)}
-                    >
-                      View
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

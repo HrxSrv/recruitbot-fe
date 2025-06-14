@@ -33,14 +33,14 @@ export function UserMenu() {
       })
     }
   }
-
+const user = useAuth().user
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full relative group">
           <span className="absolute inset-0 rounded-full bg-primary/10 scale-0 transition-transform duration-200 group-hover:scale-100"></span>
           <Avatar className="h-8 w-8 ring-2 ring-white/10 transition-all duration-200 group-hover:ring-primary/20">
-            <AvatarImage src="/abstract-geometric-shapes.png" alt="User" />
+            <AvatarImage src={user?.picture?user.picture:"/abstract-geometric-shapes.png"} alt="User" />
             <AvatarFallback>JD</AvatarFallback>
           </Avatar>
         </Button>

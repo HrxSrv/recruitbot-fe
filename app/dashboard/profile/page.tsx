@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea"
 
 export default function ProfilePage() {
   const { user } = useAuth()
+  console.log("[Profile Page] User data:", user)
   const [isEditing, setIsEditing] = useState(false)
   const [editedUser, setEditedUser] = useState({
     name: user?.name || "",
@@ -108,7 +109,7 @@ const router = useRouter();
                   </Badge>
                 </div>
               </div>
-              <AnimatePresence mode="wait">
+              {/* <AnimatePresence mode="wait">
                 {!isEditing ? (
                   <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                     <Pencil className="h-4 w-4 mr-2" />
@@ -126,7 +127,7 @@ const router = useRouter();
                     </Button>
                   </div>
                 )}
-              </AnimatePresence>
+              </AnimatePresence> */}
             </div>
           </div>
         </div>
