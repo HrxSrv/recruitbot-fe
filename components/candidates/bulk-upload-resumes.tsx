@@ -524,7 +524,9 @@ export function BulkUploadDialog({ open, onOpenChange, jobId, jobTitle, onUpload
                                     {file.processing_time_seconds && (
                                       <span>{file.processing_time_seconds.toFixed(1)}s</span>
                                     )}
-                                    <code className="bg-gray-100 px-1 rounded text-xs">{file.file_id.slice(-6)}</code>
+                                    {file.file_id && (
+                                      <code className="bg-gray-100 px-1 rounded text-xs">{file.file_id.slice(-6)}</code>
+                                    )}
                                   </div>
                                 </div>
                               ))}
