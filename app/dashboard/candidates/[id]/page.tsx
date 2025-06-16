@@ -279,6 +279,7 @@ export default function CandidateProfilePage() {
         setError(null)
         const candidateData = await getCandidate(candidateId)
         setCandidate(candidateData)
+        console.log(can)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch candidate"
         setError(errorMessage)

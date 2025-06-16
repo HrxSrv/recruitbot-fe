@@ -77,13 +77,13 @@ export default function CandidatesPage() {
     try {
       setLoading(true)
       setError(null)
-
-      const response = await listCandidates({
-        skip: (pagination.page - 1) * pagination.per_page,
-        limit: pagination.per_page,
-        status_filter: selectedStatusFilter === "all_statuses" ? undefined : selectedStatusFilter || undefined,
-        job_id_filter: selectedJobFilter === "all_jobs" ? undefined : selectedJobFilter || undefined,
-      })
+       const activeJobFilter = selectedJobFilter || jobId || undefined
+       const response = await listCandidates({
+      skip: (pagination.page - 1) * pagination.per_page,
+      limit: pagination.per_page,
+      // status_filter: selectedStatusFilter === "all_statuses" ? undefined : selectedStatusFilter || undefined,
+      job_id_filter: activeJobFilter === "all_jobs" ? undefined : activeJobFilter,
+    })
 
       setCandidates(response.candidates)
       setPagination({
@@ -115,12 +115,18 @@ export default function CandidatesPage() {
   }, [selectedJobFilter, selectedStatusFilter, pagination.page])
 
   const filteredCandidates = candidates.filter((candidate) => {
-    const matchesSearch =
-      candidate.personal_info.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      candidate.personal_info.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const matchesSearch =
+    candidate.personal_info.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    candidate.personal_info.email.toLowerCase().includes(searchQuery.toLowerCase())
 
-    return matchesSearch
-  })
+  // Status filtering: check if candidate has at least one application with the selected status
+  const matchesStatus = 
+    !selectedStatusFilter || 
+    selectedStatusFilter === "all_statuses" ||
+    candidate.applications.some(app => app.status === selectedStatusFilter)
+
+  return matchesSearch && matchesStatus
+})
 
   const handleViewProfile = (candidateId: string) => {
     router.push(`/dashboard/candidates/${candidateId}`)
