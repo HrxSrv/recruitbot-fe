@@ -268,7 +268,7 @@ export default function JobDetailsPage() {
         <div className="flex gap-2 flex-wrap">
           <Button onClick={() => router.push(`/dashboard/candidates?jobId=${jobId}`)} variant="outline">
             <Users className="mr-2 h-4 w-4" />
-            View Applications ({job.application_count})
+            View Applications 
           </Button>
 
           <Button

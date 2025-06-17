@@ -28,6 +28,8 @@ import {
   ChevronRight,
   X,
   Loader2,
+  Clock,
+  CheckCircle,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -38,8 +40,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { getCandidate, downloadResume, type Candidate, type CallQA, type JobApplication } from "@/lib/api/candidates"
+import { getCalls, getCallDetails, type CallDetailsResponse, type CallStatus } from "@/lib/api/calls"
 import { JobAssociationDialog } from "@/components/candidates/job-association-dialog"
 import { ScheduleCallDialog } from "@/components/candidates/schedule-call-dialog"
+import { CallAnalysisDialog } from "@/components/candidates/call-analysis-dialog"
 
 // Interview Wizard Component with failsafes
 function InterviewWizard({
@@ -267,6 +271,9 @@ export default function CandidateProfilePage() {
   const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [callAnalysisOpen, setCallAnalysisOpen] = useState(false)
+  const [selectedCallData, setSelectedCallData] = useState<CallDetailsResponse | null>(null)
+  const [callsData, setCallsData] = useState<Record<string, any>>({})
   const { toast } = useToast()
   const [jobAssociationDialogOpen, setJobAssociationDialogOpen] = useState(false)
   const [scheduleCallDialogOpen, setScheduleCallDialogOpen] = useState(false)
@@ -279,7 +286,27 @@ export default function CandidateProfilePage() {
         setError(null)
         const candidateData = await getCandidate(candidateId)
         setCandidate(candidateData)
-        console.log(can)
+
+        // Fetch calls for each application
+        const callsPromises = candidateData.applications.map(async (app) => {
+          try {
+            const callsResponse = await getCalls({
+              candidate_id: candidateId,
+              job_id: app.job_id,
+            })
+            return { jobId: app.job_id, calls: callsResponse.calls }
+          } catch (error) {
+            console.error(`Failed to fetch calls for job ${app.job_id}:`, error)
+            return { jobId: app.job_id, calls: [] }
+          }
+        })
+
+        const callsResults = await Promise.all(callsPromises)
+        const callsMap: Record<string, any> = {}
+        callsResults.forEach(({ jobId, calls }) => {
+          callsMap[jobId] = calls
+        })
+        setCallsData(callsMap)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch candidate"
         setError(errorMessage)
@@ -337,6 +364,20 @@ export default function CandidateProfilePage() {
     setSelectedInterview(null)
   }
 
+  const handleViewCallAnalysis = async (callId: string) => {
+    try {
+      const callDetails = await getCallDetails(callId)
+      setSelectedCallData(callDetails)
+      setCallAnalysisOpen(true)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load call analysis",
+        variant: "destructive",
+      })
+    }
+  }
+
   const getStatusColor = (status: string | null | undefined) => {
     if (!status) return "text-gray-700 bg-gray-100 border-gray-200"
     switch (status) {
@@ -350,6 +391,24 @@ export default function CandidateProfilePage() {
         return "text-emerald-700 bg-emerald-100 border-emerald-200"
       case "rejected":
         return "text-red-700 bg-red-100 border-red-200"
+      default:
+        return "text-gray-700 bg-gray-100 border-gray-200"
+    }
+  }
+
+  const getCallStatusColor = (status: CallStatus) => {
+    switch (status) {
+      case "completed":
+        return "text-green-700 bg-green-100 border-green-200"
+      case "scheduled":
+        return "text-blue-700 bg-blue-100 border-blue-200"
+      case "in_progress":
+        return "text-yellow-700 bg-yellow-100 border-yellow-200"
+      case "failed":
+      case "no_show":
+        return "text-red-700 bg-red-100 border-red-200"
+      case "cancelled":
+        return "text-gray-700 bg-gray-100 border-gray-200"
       default:
         return "text-gray-700 bg-gray-100 border-gray-200"
     }
@@ -459,14 +518,6 @@ export default function CandidateProfilePage() {
           </Link>
           <div className="flex-1" />
           <div className="flex gap-2">
-            {/* <Button
-              variant="outline"
-              onClick={() => setJobAssociationDialogOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Briefcase className="h-4 w-4 mr-2" />
-              Associate with Job
-            </Button> */}
             <Button variant="outline" onClick={handleDownloadResume}>
               <Download className="h-4 w-4 mr-2" />
               Download Resume
@@ -757,124 +808,211 @@ export default function CandidateProfilePage() {
           {activeTab === "applications" && (
             <div className="space-y-6">
               {candidate.applications.length > 0 ? (
-                candidate.applications.map((application, index) => (
-                  <Card key={index} className="border shadow-sm rounded-lg">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="flex items-center gap-2">
-                          <Target className="h-5 w-5 text-blue-600" />
-                          Job Application - {application.job_id}
-                        </CardTitle>
-                        <Badge className={`border ${getStatusColor(application.status)}`}>{application.status}</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Application Details */}
-                      <div className="grid lg:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <div>
-                            <p className="text-sm text-gray-500 mb-1">Application Date</p>
-                            <p className="font-medium">{new Date(application.application_date).toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-500 mb-1">Matching Score</p>
-                            <Badge className={`${getScoreColor(application.matching_score)}`}>
-                              {application.matching_score}%
-                            </Badge>
-                          </div>
+                candidate.applications.map((application, index) => {
+                  const jobCalls = callsData[application.job_id] || []
+                  const completedCall = jobCalls.find((call: any) => call.status === "completed")
+
+                  return (
+                    <Card key={index} className="border shadow-sm rounded-lg">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="flex items-center gap-2">
+                            <Target className="h-5 w-5 text-blue-600" />
+                            Job Application - {application.job_id}
+                          </CardTitle>
+                          <Badge className={`border ${getStatusColor(application.status)}`}>{application.status}</Badge>
                         </div>
-                        <div className="space-y-4">
-                          {application.notes && (
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {/* Application Details */}
+                        <div className="grid lg:grid-cols-2 gap-6">
+                          <div className="space-y-4">
                             <div>
-                              <p className="text-sm text-gray-500 mb-1">Notes</p>
-                              <p className="text-gray-700 text-sm bg-gray-50 p-3 rounded-lg">{application.notes}</p>
+                              <p className="text-sm text-gray-500 mb-1">Application Date</p>
+                              <p className="font-medium">{new Date(application.application_date).toLocaleString()}</p>
                             </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Interview Section */}
-                      {application.call_qa ? (
-                        <Card className="bg-purple-50 border-purple-200">
-                          <CardHeader>
-                            <div className="flex justify-between items-start">
-                              <CardTitle className="flex items-center gap-2 text-purple-800">
-                                <MessageSquare className="h-5 w-5 text-purple-600" />
-                                Interview Completed
-                              </CardTitle>
-                              {application.call_qa.overall_score && (
-                                <Badge className={`${getScoreColor(application.call_qa.overall_score)}`}>
-                                  Score: {application.call_qa.overall_score}%
-                                </Badge>
-                              )}
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Matching Score</p>
+                              <Badge className={`${getScoreColor(application.matching_score)}`}>
+                                {application.matching_score}%
+                              </Badge>
                             </div>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {application.call_qa.call_date && (
-                                <div>
-                                  <p className="text-sm text-purple-600 mb-1">Interview Date</p>
-                                  <p className="font-medium text-purple-800">
-                                    {new Date(application.call_qa.call_date).toLocaleDateString()}
-                                  </p>
-                                </div>
-                              )}
-                              {application.call_qa.call_duration_minutes && (
-                                <div>
-                                  <p className="text-sm text-purple-600 mb-1">Duration</p>
-                                  <p className="font-medium text-purple-800">
-                                    {application.call_qa.call_duration_minutes} min
-                                  </p>
-                                </div>
-                              )}
+                          </div>
+                          <div className="space-y-4">
+                            {application.notes && (
                               <div>
-                                <p className="text-sm text-purple-600 mb-1">Questions</p>
-                                <p className="font-medium text-purple-800">
-                                  {application.call_qa.questions_answers.length}
-                                </p>
-                              </div>
-                            </div>
-
-                            {application.call_qa.interview_summary && (
-                              <div className="bg-white p-4 rounded-lg border border-purple-200">
-                                <h4 className="font-semibold text-purple-900 mb-2">Summary:</h4>
-                                <p className="text-purple-800 text-sm">{application.call_qa.interview_summary}</p>
+                                <p className="text-sm text-gray-500 mb-1">Notes</p>
+                                <p className="text-gray-700 text-sm bg-gray-50 p-3 rounded-lg">{application.notes}</p>
                               </div>
                             )}
+                          </div>
+                        </div>
 
-                            <div className="flex gap-3">
+                        {/* Call/Interview Section */}
+                        {completedCall ? (
+                          <Card className="bg-green-50 border-green-200">
+                            <CardHeader>
+                              <div className="flex justify-between items-start">
+                                <CardTitle className="flex items-center gap-2 text-green-800">
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                  Call Completed
+                                </CardTitle>
+                                <Badge className={`border ${getCallStatusColor(completedCall.status)}`}>
+                                  {completedCall.status}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                  <p className="text-sm text-green-600 mb-1">Call Date</p>
+                                  <p className="font-medium text-green-800">
+                                    {new Date(completedCall.scheduled_time).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-green-600 mb-1">Duration</p>
+                                  <p className="font-medium text-green-800">
+                                    {completedCall.call_duration
+                                      ? `${Math.floor(completedCall.call_duration / 60)}m`
+                                      : "N/A"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-green-600 mb-1">Score</p>
+                                  <p className="font-medium text-green-800">
+                                    {completedCall.candidate_score ? `${completedCall.candidate_score}%` : "N/A"}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex gap-3">
+                                <Button
+                                  onClick={() => handleViewCallAnalysis(completedCall.call_id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  <Brain className="h-4 w-4 mr-2" />
+                                  View Analysis
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ) : jobCalls.length > 0 ? (
+                          <Card className="bg-blue-50 border-blue-200">
+                            <CardHeader>
+                              <div className="flex justify-between items-start">
+                                <CardTitle className="flex items-center gap-2 text-blue-800">
+                                  <Clock className="h-5 w-5 text-blue-600" />
+                                  Call Scheduled
+                                </CardTitle>
+                                <Badge className={`border ${getCallStatusColor(jobCalls[0].status)}`}>
+                                  {jobCalls[0].status}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-sm text-blue-600 mb-1">Scheduled Time</p>
+                                  <p className="font-medium text-blue-800">
+                                    {new Date(jobCalls[0].scheduled_time).toLocaleString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-blue-600 mb-1">Call Type</p>
+                                  <p className="font-medium text-blue-800">{jobCalls[0].call_type}</p>
+                                </div>
+                              </div>
+                              <p className="text-sm text-blue-700">Call is scheduled and waiting to be conducted.</p>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          <Card className="bg-gray-50 border-gray-200">
+                            <CardContent className="text-center py-8">
+                              <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                              <h3 className="text-lg font-medium text-gray-900 mb-2">No Call Scheduled</h3>
+                              <p className="text-gray-500 mb-4">
+                                This application hasn't been scheduled for a call yet.
+                              </p>
                               <Button
-                                onClick={() => openInterviewWizard(application.call_qa!)}
+                                onClick={() => {
+                                  setSelectedApplication(application)
+                                  setScheduleCallDialogOpen(true)
+                                }}
                                 className="bg-purple-600 hover:bg-purple-700 text-white"
                               >
-                                <PlayCircle className="h-4 w-4 mr-2" />
-                                Play Interview
+                                <Phone className="h-4 w-4 mr-2" />
+                                Schedule Call
                               </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ) : (
-                        <Card className="bg-gray-50 border-gray-200">
-                          <CardContent className="text-center py-8">
-                            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No Interview Conducted</h3>
-                            <p className="text-gray-500 mb-4">This application hasn't been interviewed yet.</p>
-                            <Button
-                              onClick={() => {
-                                setSelectedApplication(application)
-                                setScheduleCallDialogOpen(true)
-                              }}
-                              className="bg-purple-600 hover:bg-purple-700 text-white"
-                            >
-                              <Phone className="h-4 w-4 mr-2" />
-                              Schedule Call
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Legacy Interview Section for backward compatibility */}
+                        {application.call_qa && (
+                          <Card className="bg-purple-50 border-purple-200">
+                            <CardHeader>
+                              <div className="flex justify-between items-start">
+                                <CardTitle className="flex items-center gap-2 text-purple-800">
+                                  <MessageSquare className="h-5 w-5 text-purple-600" />
+                                  Legacy Interview Data
+                                </CardTitle>
+                                {application.call_qa.overall_score && (
+                                  <Badge className={`${getScoreColor(application.call_qa.overall_score)}`}>
+                                    Score: {application.call_qa.overall_score}%
+                                  </Badge>
+                                )}
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {application.call_qa.call_date && (
+                                  <div>
+                                    <p className="text-sm text-purple-600 mb-1">Interview Date</p>
+                                    <p className="font-medium text-purple-800">
+                                      {new Date(application.call_qa.call_date).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                )}
+                                {application.call_qa.call_duration_minutes && (
+                                  <div>
+                                    <p className="text-sm text-purple-600 mb-1">Duration</p>
+                                    <p className="font-medium text-purple-800">
+                                      {application.call_qa.call_duration_minutes} min
+                                    </p>
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="text-sm text-purple-600 mb-1">Questions</p>
+                                  <p className="font-medium text-purple-800">
+                                    {application.call_qa.questions_answers.length}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {application.call_qa.interview_summary && (
+                                <div className="bg-white p-4 rounded-lg border border-purple-200">
+                                  <h4 className="font-semibold text-purple-900 mb-2">Summary:</h4>
+                                  <p className="text-purple-800 text-sm">{application.call_qa.interview_summary}</p>
+                                </div>
+                              )}
+
+                              <div className="flex gap-3">
+                                <Button
+                                  onClick={() => openInterviewWizard(application.call_qa!)}
+                                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                                >
+                                  <PlayCircle className="h-4 w-4 mr-2" />
+                                  Play Interview
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )
+                })
               ) : (
                 <Card className="border shadow-sm rounded-lg">
                   <CardContent className="text-center py-12">
@@ -889,33 +1027,74 @@ export default function CandidateProfilePage() {
 
           {activeTab === "files" && (
             <div className="space-y-6">
-              {/* Resume File */}
+              {/* Resume Preview */}
               <Card className="border shadow-sm rounded-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-blue-600" />
-                    Resume File
+                    Resume Preview
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-blue-100">
-                        <FileText className="h-5 w-5 text-blue-600" />
+                  {/* Resume Preview Box */}
+                  <div
+                    className="relative border-2 border-dashed border-gray-300 rounded-lg p-8 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group"
+                    onClick={handleDownloadResume}
+                  >
+                    <div className="text-center">
+                      <div className="mx-auto w-16 h-20 bg-white border-2 border-gray-300 rounded-lg shadow-sm mb-4 flex items-center justify-center group-hover:shadow-md transition-shadow">
+                        <FileText className="h-8 w-8 text-blue-600" />
                       </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">Resume File</h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          {candidate.resume_analysis.resume_file_path && (
-                            <span>Path: {candidate.resume_analysis.resume_file_path}</span>
-                          )}
-                        </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {candidate.personal_info.name}'s Resume
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">Click to download the full resume document</p>
+                      <div className="flex items-center justify-center gap-2 text-blue-600 group-hover:text-blue-700">
+                        <Download className="h-4 w-4" />
+                        <span className="font-medium">Download PDF</span>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleDownloadResume}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
+
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-20 transition-opacity rounded-lg" />
+                  </div>
+
+                  {/* Resume Analysis Summary */}
+                  {candidate.resume_analysis.analysis_summary && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                        <Brain className="h-4 w-4" />
+                        Analysis Summary
+                      </h4>
+                      <p className="text-blue-800 text-sm leading-relaxed">
+                        {candidate.resume_analysis.analysis_summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* File Metadata */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">File Status</p>
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Available
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Analysis Status</p>
+                      <Badge
+                        className={
+                          candidate.resume_analysis.analysis_summary === "Resume uploaded by HR - awaiting VLM analysis"
+                            ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                            : "bg-green-100 text-green-800 border-green-200"
+                        }
+                      >
+                        {candidate.resume_analysis.analysis_summary === "Resume uploaded by HR - awaiting VLM analysis"
+                          ? "Pending Analysis"
+                          : "Analyzed"}
+                      </Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -923,7 +1102,7 @@ export default function CandidateProfilePage() {
           )}
         </div>
 
-        {/* Job Association Dialog not available for now*/}
+        {/* Job Association Dialog */}
         <JobAssociationDialog
           open={jobAssociationDialogOpen}
           onOpenChange={setJobAssociationDialogOpen}
@@ -943,16 +1122,20 @@ export default function CandidateProfilePage() {
             candidateId={candidateId}
             candidateName={candidate.personal_info.name}
             jobId={selectedApplication.job_id}
-            jobTitle={`Job ${selectedApplication.job_id}`} // You might want to fetch actual job title
+            jobTitle={`Job ${selectedApplication.job_id}`}
             onScheduleComplete={() => {
-              // Optionally refresh candidate data or show success message
               toast({
                 title: "Success",
                 description: "Call has been scheduled successfully",
               })
+              // Refresh the page to show updated call data
+              window.location.reload()
             }}
           />
         )}
+
+        {/* Call Analysis Dialog */}
+        <CallAnalysisDialog open={callAnalysisOpen} onOpenChange={setCallAnalysisOpen} callData={selectedCallData} />
       </motion.div>
     </div>
   )

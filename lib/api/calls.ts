@@ -1,10 +1,10 @@
-import { baseUrl } from '@/lib/config'
+import { baseUrl } from "@/lib/config"
 
-// FIX: Match your backend enum values exactly
+// Call Types and Enums
 export enum CallType {
   SCREENING = "screening",
-  INTERVIEW = "interview",  // Changed from "technical" to "interview"
-  FOLLOW_UP = "follow_up",  // Changed from "final" to "follow_up"
+  INTERVIEW = "interview",
+  FOLLOW_UP = "follow_up",
 }
 
 export enum CallStatus {
@@ -13,15 +13,70 @@ export enum CallStatus {
   COMPLETED = "completed",
   CANCELLED = "cancelled",
   NO_SHOW = "no_show",
-  FAILED = "failed",  // Added to match backend
+  FAILED = "failed",
 }
 
+// API Request/Response Types
 export interface ScheduleCallRequest {
   candidate_id: string
   job_id: string
-  scheduled_time?: string // ISO string
+  scheduled_time?: string
   call_type?: CallType
   notes?: string
+}
+
+export interface CallDetails {
+  call_id: string
+  scheduled_time: string
+  call_type: CallType
+  status: CallStatus
+  vapi_call_id?: string
+  vapi_assistant_id?: string
+  call_duration?: number
+  call_summary?: string
+  call_transcript?: string
+  call_recording_url?: string
+  candidate_score?: number
+  interviewer_notes?: string
+  next_steps?: string
+  scheduled_by: string
+  rescheduled_count: number
+  last_attempt?: string
+  updated_at?: string
+  analysis_timestamp?: string
+  gemini_analysis?: GeminiAnalysis
+}
+
+export interface GeminiAnalysis {
+  overall_assessment: {
+    score: number
+    recommendation: string
+    confidence_level: string
+  }
+  key_strengths: string[]
+  areas_of_concern: string[]
+  technical_evaluation: {
+    technical_score: number
+    technical_summary: string
+  }
+  communication_evaluation: {
+    communication_score: number
+    communication_summary: string
+  }
+  cultural_fit: {
+    cultural_fit_score: number
+    cultural_fit_summary: string
+  }
+  question_responses: Array<{
+    question: string
+    response_quality: string
+    score: number
+    notes: string
+  }>
+  executive_summary: string
+  next_steps: string
+  interview_duration_assessment: string
+  red_flags: string[]
 }
 
 export interface ScheduleCallResponse {
@@ -47,6 +102,120 @@ export interface ScheduleCallResponse {
   pipeline_status: string
 }
 
+export interface CallListResponse {
+  calls: Array<{
+    call_id: string
+    candidate: {
+      id: string
+      name: string
+      email: string
+    }
+    job: {
+      id: string
+      title: string
+    }
+    scheduled_time: string
+    call_type: CallType
+    status: CallStatus
+    call_duration?: number
+    candidate_score?: number
+    vapi_assistant_id?: string
+    has_assistant: boolean
+  }>
+  total: number
+  filters_applied: {
+    candidate_id?: string
+    job_id?: string
+    status?: CallStatus
+  }
+}
+
+export interface CallDetailsResponse {
+  status: string
+  call_details: CallDetails
+  candidate: {
+    id: string
+    name: string
+    email: string
+    phone?: string
+    location?: string
+    resume_analysis: {
+      overall_score: number
+      skills: string[]
+      experience_years: number
+      education?: string
+      previous_roles: string[]
+      analysis_summary: string
+      resume_file_path?: string
+    }
+    status: string
+    total_applications: number
+    uploaded_by: string
+    upload_source: string
+  }
+  job: {
+    id: string
+    title: string
+    description: string
+    requirements: string[]
+    location: string
+    job_type: string
+    experience_level?: string
+    remote_allowed: boolean
+    department?: string
+    application_deadline?: string
+    questions: Array<{
+      question: string
+      ideal_answer: string
+      weight: number
+    }>
+    salary_range?: {
+      min_salary?: number
+      max_salary?: number
+      currency: string
+    }
+    status: string
+    view_count: number
+    application_count: number
+    created_at: string
+    updated_at?: string
+  }
+  analysis_summary?: {
+    overall_score: number
+    recommendation: string
+    confidence_level: string
+    technical_score: number
+    communication_score: number
+    cultural_fit_score: number
+    key_strengths_count: number
+    areas_of_concern_count: number
+    red_flags_count: number
+    executive_summary: string
+    interview_duration_assessment: string
+  }
+  performance_metrics: {
+    call_completion_rate: number
+    interview_quality_score: number
+    duration_minutes: number
+    transcript_length: number
+    questions_asked: number
+  }
+  data_completeness: {
+    has_transcript: boolean
+    has_recording: boolean
+    has_summary: boolean
+    has_analysis: boolean
+    has_score: boolean
+  }
+  timeline: {
+    scheduled: string
+    last_attempt?: string
+    completed?: string
+    analyzed?: string
+  }
+}
+
+// Error Class
 class CallsError extends Error {
   constructor(message: string) {
     super(message)
@@ -54,9 +223,10 @@ class CallsError extends Error {
   }
 }
 
+// Auth Helper Functions
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null
-  
+
   try {
     const token = localStorage.getItem("auth_token")
     return token
@@ -68,7 +238,7 @@ function getAuthToken(): string | null {
 
 function isTokenExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const payload = JSON.parse(atob(token.split(".")[1]))
     const currentTime = Math.floor(Date.now() / 1000)
     return payload.exp < currentTime
   } catch (error) {
@@ -83,15 +253,6 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 1
 
   const authToken = getAuthToken()
 
-  console.log("=== API Request Debug ===")
-  console.log("URL:", url)
-  console.log("Auth token found:", !!authToken)
-  
-  if (authToken) {
-    console.log("Auth token value:", `${authToken.substring(0, 10)}...`)
-    console.log("Token expired:", isTokenExpired(authToken))
-  }
-
   try {
     const requestOptions: RequestInit = {
       ...options,
@@ -103,12 +264,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 1
       },
     }
 
-    console.log("Request headers:", requestOptions.headers)
-
     const response = await fetch(url, requestOptions)
-
-    console.log("Response status:", response.status)
-    console.log("Response headers:", Object.fromEntries(response.headers.entries()))
 
     if (response.status === 401 && authToken) {
       console.warn("Token may be expired, clearing localStorage")
@@ -127,9 +283,8 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 1
 
 async function refreshTokenIfNeeded(): Promise<boolean> {
   const refreshToken = localStorage.getItem("refresh_token")
-  
+
   if (!refreshToken) {
-    console.log("No refresh token available")
     return false
   }
 
@@ -145,10 +300,8 @@ async function refreshTokenIfNeeded(): Promise<boolean> {
     if (response.ok) {
       const data = await response.json()
       localStorage.setItem("auth_token", data.auth_token)
-      console.log("Token refreshed successfully")
       return true
     } else {
-      console.warn("Token refresh failed")
       localStorage.removeItem("refresh_token")
       localStorage.removeItem("auth_token")
       return false
@@ -161,64 +314,53 @@ async function refreshTokenIfNeeded(): Promise<boolean> {
 
 async function fetchWithAutoRefresh(url: string, options: RequestInit = {}, timeout = 10000) {
   let response = await fetchWithAuth(url, options, timeout)
-  
+
   if (response.status === 401) {
     const refreshed = await refreshTokenIfNeeded()
     if (refreshed) {
       response = await fetchWithAuth(url, options, timeout)
     }
   }
-  
+
   return response
 }
 
+// API Functions
 export async function scheduleCall(request: ScheduleCallRequest): Promise<ScheduleCallResponse> {
-  // Build URL with ALL parameters as query parameters
   const searchParams = new URLSearchParams({
     candidate_id: request.candidate_id,
     job_id: request.job_id,
   })
-  
-  // Add optional parameters to query string if they exist
+
   if (request.scheduled_time) {
-    console.log("Sending scheduled_time:", request.scheduled_time);
-    searchParams.set('scheduled_time', request.scheduled_time)
+    searchParams.set("scheduled_time", request.scheduled_time)
   }
   if (request.call_type) {
-    console.log("Sending call_type:", request.call_type);
-    searchParams.set('call_type', request.call_type)
+    searchParams.set("call_type", request.call_type)
   }
   if (request.notes) {
-    console.log("Sending notes:", request.notes);
-    searchParams.set('notes', request.notes)
+    searchParams.set("notes", request.notes)
   }
 
-  const finalUrl = `${baseUrl}/calls/schedule?${searchParams.toString()}`;
-  console.log("Final request URL:", finalUrl);
+  const finalUrl = `${baseUrl}/calls/schedule?${searchParams.toString()}`
 
-  // Make POST request with NO body - all data is in query parameters
   const response = await fetchWithAutoRefresh(finalUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    // No body needed since everything is in query parameters
   })
 
-  console.log("Response status:", response.status);
-
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Error response text:", errorText);
-    
-    let error;
+    const errorText = await response.text()
+    let error
     try {
-      error = JSON.parse(errorText);
+      error = JSON.parse(errorText)
     } catch {
-      error = { detail: errorText || "Failed to schedule call" };
+      error = { detail: errorText || "Failed to schedule call" }
     }
-    
+
     throw new CallsError(error.detail || "Failed to schedule call")
   }
 
@@ -233,7 +375,7 @@ export async function getCalls(
     skip?: number
     limit?: number
   } = {},
-): Promise<any> {
+): Promise<CallListResponse> {
   const searchParams = new URLSearchParams()
   if (params.candidate_id) searchParams.set("candidate_id", params.candidate_id)
   if (params.job_id) searchParams.set("job_id", params.job_id)
@@ -255,6 +397,29 @@ export async function getCalls(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
     throw new CallsError(error.detail || "Failed to fetch calls")
+  }
+
+  return response.json()
+}
+
+export async function getCallDetails(callId: string): Promise<CallDetailsResponse> {
+  const response = await fetchWithAutoRefresh(`${baseUrl}/calls/${callId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new CallsError("Call not found")
+    }
+    if (response.status === 403) {
+      throw new CallsError("Access denied")
+    }
+    const error = await response.json().catch(() => ({}))
+    throw new CallsError(error.detail || "Failed to fetch call details")
   }
 
   return response.json()

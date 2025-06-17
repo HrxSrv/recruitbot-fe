@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
-import { Star, MapPin, Briefcase, Calendar, User, Loader2, ArrowRightIcon, ArrowRight } from "lucide-react"
+import { User, Loader2, ArrowRight } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { listCandidates, type Candidate } from "@/lib/api/candidates"
 import { type Job, getJobs } from "@/lib/api/jobs"
-import { UploadResumeButton } from "@/components/candidates/upload-resume-button"
 import { ResumeAnalysisButton } from "@/components/candidates/resume-analysis-button"
 
 export default function CandidatesPage() {
@@ -77,13 +76,13 @@ export default function CandidatesPage() {
     try {
       setLoading(true)
       setError(null)
-       const activeJobFilter = selectedJobFilter || jobId || undefined
-       const response = await listCandidates({
-      skip: (pagination.page - 1) * pagination.per_page,
-      limit: pagination.per_page,
-      // status_filter: selectedStatusFilter === "all_statuses" ? undefined : selectedStatusFilter || undefined,
-      job_id_filter: activeJobFilter === "all_jobs" ? undefined : activeJobFilter,
-    })
+      const activeJobFilter = selectedJobFilter || jobId || undefined
+      const response = await listCandidates({
+        skip: (pagination.page - 1) * pagination.per_page,
+        limit: pagination.per_page,
+        // status_filter: selectedStatusFilter === "all_statuses" ? undefined : selectedStatusFilter || undefined,
+        job_id_filter: activeJobFilter === "all_jobs" ? undefined : activeJobFilter,
+      })
 
       setCandidates(response.candidates)
       setPagination({
@@ -115,18 +114,18 @@ export default function CandidatesPage() {
   }, [selectedJobFilter, selectedStatusFilter, pagination.page])
 
   const filteredCandidates = candidates.filter((candidate) => {
-  const matchesSearch =
-    candidate.personal_info.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    candidate.personal_info.email.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch =
+      candidate.personal_info.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      candidate.personal_info.email.toLowerCase().includes(searchQuery.toLowerCase())
 
-  // Status filtering: check if candidate has at least one application with the selected status
-  const matchesStatus = 
-    !selectedStatusFilter || 
-    selectedStatusFilter === "all_statuses" ||
-    candidate.applications.some(app => app.status === selectedStatusFilter)
+    // Status filtering: check if candidate has at least one application with the selected status
+    const matchesStatus =
+      !selectedStatusFilter ||
+      selectedStatusFilter === "all_statuses" ||
+      candidate.applications.some((app) => app.status === selectedStatusFilter)
 
-  return matchesSearch && matchesStatus
-})
+    return matchesSearch && matchesStatus
+  })
 
   const handleViewProfile = (candidateId: string) => {
     router.push(`/dashboard/candidates/${candidateId}`)
@@ -303,129 +302,100 @@ export default function CandidatesPage() {
         </div>
 
         <div className="grid gap-4">
-  {filteredCandidates.map((candidate) => (
-    <Card
-      key={candidate.id}
-      className="group relative border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden bg-white"
-      onClick={() => handleViewProfile(candidate.id)}
-    >
-      {/* Hover Arrow */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-        <ArrowRight className="h-5 w-5 text-slate-400" />
-      </div>
-
-      <CardContent className="p-6">
-        <div className="flex items-start gap-6">
-          {/* Left Section - Avatar and Basic Info */}
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <div className="relative">
-              <Avatar className="w-16 h-16 border-2 border-slate-100 shadow-sm">
-                <AvatarFallback className="text-base font-semibold bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700">
-                  {candidate.personal_info.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-              {/* Status Indicator Dot */}
-              <div
-                className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm ${
-                  candidate.status === 'active' ? 'bg-emerald-500' :
-                  candidate.status === 'pending' ? 'bg-amber-500' :
-                  candidate.status === 'inactive' ? 'bg-slate-400' : 'bg-slate-300'
-                }`}
-              />
-            </div>
-            
-            <div className="space-y-1.5">
-              <h3 className="text-xl font-semibold text-slate-900 leading-tight">
-                {candidate.personal_info.name}
-              </h3>
-              <p className="text-sm text-slate-600 font-medium">
-                {candidate.personal_info.email}
-              </p>
-              <div className="flex items-center gap-3">
-                <Badge 
-                  variant="secondary"
-                  className={`text-xs font-medium px-2.5 py-1 ${getCandidateStatusColor(candidate.status)}`}
-                >
-                  {candidate.status}
-                </Badge>
-                <span className="text-xs text-slate-400 font-mono">
-                  #{candidate.id.slice(-8)}
-                </span>
+          {filteredCandidates.map((candidate) => (
+            <Card
+              key={candidate.id}
+              className="group relative border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden bg-white"
+              onClick={() => handleViewProfile(candidate.id)}
+            >
+              {/* Hover Arrow */}
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                <ArrowRight className="h-5 w-5 text-slate-400" />
               </div>
-            </div>
-          </div>
 
-          {/* Center Section - Key Metrics Grid */}
-          <div className="flex-1 grid grid-cols-4 gap-6 px-6 border-x border-slate-100">
-            <div className="text-center flex flex-col justify-center">
-              <p className="text-2xl font-bold text-slate-900">
-                {candidate.resume_analysis.experience_years}
-              </p>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">
-                Years Exp
-              </p>
-            </div>
+              <CardContent className="p-6">
+                <div className="flex items-start gap-6">
+                  {/* Left Section - Avatar and Basic Info */}
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="relative">
+                      <Avatar className="w-16 h-16 border-2 border-slate-100 shadow-sm">
+                        <AvatarFallback className="text-base font-semibold bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700">
+                          {candidate.personal_info.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      {/* Status Indicator Dot */}
+                      <div
+                        className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm ${
+                          candidate.status === "active"
+                            ? "bg-emerald-500"
+                            : candidate.status === "pending"
+                              ? "bg-amber-500"
+                              : candidate.status === "inactive"
+                                ? "bg-slate-400"
+                                : "bg-slate-300"
+                        }`}
+                      />
+                    </div>
 
-            <div className="text-center flex flex-col justify-center">
-              <p className="text-sm font-semibold text-slate-900 truncate">
-                {candidate.personal_info.location || "Remote"}
-              </p>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">
-                Location
-              </p>
-            </div>
+                    <div className="space-y-1.5">
+                      <h3 className="text-xl font-semibold text-slate-900 leading-tight">
+                        {candidate.personal_info.name}
+                      </h3>
+                      <p className="text-sm text-slate-600 font-medium">{candidate.personal_info.email}</p>
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs font-medium px-2.5 py-1 ${getCandidateStatusColor(candidate.status)}`}
+                        >
+                          {candidate.status}
+                        </Badge>
+                        <span className="text-xs text-slate-400 font-mono">#{candidate.id.slice(-8)}</span>
+                      </div>
+                    </div>
+                  </div>
 
-            <div className="text-center flex flex-col justify-center">
-              <p className={`text-2xl font-bold ${getScoreColor(candidate.resume_analysis.matching_score)}`}>
-                {candidate.resume_analysis.matching_score}%
-              </p>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">
-                Match Score
-              </p>
-            </div>
+                  {/* Center Section - Match Score */}
+                  <div className="flex-1 flex justify-center items-center px-6 border-x border-slate-100">
+                    <div className="text-center">
+                      <p className={`text-3xl font-bold ${getScoreColor(candidate.resume_analysis.matching_score)}`}>
+                        {candidate.resume_analysis.matching_score}%
+                      </p>
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Match Score</p>
+                    </div>
+                  </div>
 
-            <div className="text-center flex flex-col justify-center">
-              <p className="text-2xl font-bold text-slate-900">
-                {candidate.total_applications}
-              </p>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">
-                Applications
-              </p>
-            </div>
-          </div>
+                  {/* Right Section - Application Status */}
+                  <div className="flex flex-col justify-center items-end gap-4 flex-shrink-0 min-w-[200px] relative">
+                    {/* Application Status Badges */}
+                    <div className="flex flex-wrap gap-1.5 justify-end max-w-[180px]">
+                      {candidate.applications.map((app, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className={`text-xs font-medium px-2 py-1 ${getStatusColor(app.status)}`}
+                        >
+                          {app.status}
+                        </Badge>
+                      ))}
+                    </div>
 
-          {/* Right Section - Applications & Actions */}
-          <div className="flex flex-col justify-center items-end gap-4 flex-shrink-0 min-w-[200px] relative">
-            {/* Application Status Badges */}
-            <div className="flex flex-wrap gap-1.5 justify-end max-w-[180px]">
-              {candidate.applications.map((app, index) => (
-                <Badge 
-                  key={index} 
-                  variant="outline"
-                  className={`text-xs font-medium px-2 py-1 ${getStatusColor(app.status)}`}
-                >
-                  {app.status}
-                </Badge>
-              ))}
-            </div>
+                    {/* Resume Analysis Button - Positioned at bottom right */}
+                    {candidate.resume_analysis.analysis_summary === "Resume uploaded by HR - awaiting VLM analysis" && (
+                      <div className="absolute bottom-0 right-0">
+                        <ResumeAnalysisButton
+                          candidateId={candidate.id}
+                          jobId={candidate.applications.length > 0 ? candidate.applications[0].job_id : undefined}
+                          onAnalysisComplete={handleUploadComplete}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            {/* Resume Analysis Button - Positioned at bottom right */}
-            {candidate.resume_analysis.analysis_summary === "Resume uploaded by HR - awaiting VLM analysis" && (
-              <div className="absolute bottom-0 right-0">
-                <ResumeAnalysisButton
-                  candidateId={candidate.id}
-                  jobId={candidate.applications.length > 0 ? candidate.applications[0].job_id : undefined}
-                  onAnalysisComplete={handleUploadComplete}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer - Enhanced with better spacing
+                {/* Footer - Enhanced with better spacing
         <div className="mt-6 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6 text-xs text-slate-500">
@@ -455,25 +425,25 @@ export default function CandidatesPage() {
             </div>
           </div>
         </div> */}
-      </CardContent>
-    </Card>
-  ))}
+              </CardContent>
+            </Card>
+          ))}
 
-  {/* Empty State */}
-  {filteredCandidates.length === 0 && !loading && (
-    <Card className="border border-slate-200 shadow-sm">
-      <CardContent className="text-center py-16">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
-          <User className="h-8 w-8 text-slate-400" />
+          {/* Empty State */}
+          {filteredCandidates.length === 0 && !loading && (
+            <Card className="border border-slate-200 shadow-sm">
+              <CardContent className="text-center py-16">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+                  <User className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">No Candidates Found</h3>
+                <p className="text-slate-600 max-w-sm mx-auto">
+                  We couldn't find any candidates matching your current filters. Try adjusting your search criteria.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
-        <h3 className="text-xl font-semibold text-slate-900 mb-2">No Candidates Found</h3>
-        <p className="text-slate-600 max-w-sm mx-auto">
-          We couldn't find any candidates matching your current filters. Try adjusting your search criteria.
-        </p>
-      </CardContent>
-    </Card>
-  )}
-</div>
 
         {/* Pagination */}
         {pagination.total > pagination.per_page && (
