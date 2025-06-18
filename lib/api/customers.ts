@@ -1,5 +1,4 @@
-import { baseUrl } from '@/lib/config'
-
+import { baseUrl } from "@/lib/config"
 
 export interface Customer {
   id: string
@@ -32,6 +31,19 @@ export interface CustomerUpdate {
   industry?: string
   company_size?: string
 }
+
+export interface PreferredCallTimeResponse {
+  status: string
+  customer_id: string
+  company_name: string
+  preferred_call_time: string
+  preferred_call_time_raw?: string
+}
+
+export interface PreferredCallTimeUpdate {
+  preferred_call_time: string
+}
+
 class CustomerError extends Error {
   constructor(message: string) {
     super(message)
@@ -40,8 +52,8 @@ class CustomerError extends Error {
 }
 
 function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null // SSR check
-  
+  if (typeof window === "undefined") return null
+
   try {
     const token = localStorage.getItem("auth_token")
     return token
@@ -50,9 +62,10 @@ function getAuthToken(): string | null {
     return null
   }
 }
+
 function isTokenExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const payload = JSON.parse(atob(token.split(".")[1]))
     const currentTime = Math.floor(Date.now() / 1000)
     return payload.exp < currentTime
   } catch (error) {
@@ -60,23 +73,12 @@ function isTokenExpired(token: string): boolean {
     return true
   }
 }
-// Helper function for API requests with explicit cookie handling
+
 async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 10000) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout)
 
-  // Get auth token from localStorage
   const authToken = getAuthToken()
-
-  // Debug logging
-  console.log("=== API Request Debug ===")
-  console.log("URL:", url)
-  console.log("Auth token found:", !!authToken)
-  
-  if (authToken) {
-    console.log("Auth token value:", `${authToken.substring(0, 10)}...`)
-    console.log("Token expired:", isTokenExpired(authToken))
-  }
 
   try {
     const requestOptions: RequestInit = {
@@ -84,24 +86,16 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 1
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
-        // Set Authorization header with Bearer token
         ...(authToken && { Authorization: `Bearer ${authToken}` }),
         ...options.headers,
       },
     }
 
-    console.log("Request headers:", requestOptions.headers)
-
     const response = await fetch(url, requestOptions)
 
-    console.log("Response status:", response.status)
-    console.log("Response headers:", Object.fromEntries(response.headers.entries()))
-
-    // Handle token expiration
     if (response.status === 401 && authToken) {
       console.warn("Token may be expired, clearing localStorage")
       localStorage.removeItem("auth_token")
-      // Optionally clear refresh token if you have one
       localStorage.removeItem("refresh_token")
     }
 
@@ -113,11 +107,11 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 1
     throw error
   }
 }
+
 async function refreshTokenIfNeeded(): Promise<boolean> {
   const refreshToken = localStorage.getItem("refresh_token")
-  
+
   if (!refreshToken) {
-    console.log("No refresh token available")
     return false
   }
 
@@ -133,11 +127,8 @@ async function refreshTokenIfNeeded(): Promise<boolean> {
     if (response.ok) {
       const data = await response.json()
       localStorage.setItem("auth_token", data.auth_token)
-      console.log("Token refreshed successfully")
       return true
     } else {
-      console.warn("Token refresh failed")
-      // Clear invalid refresh token
       localStorage.removeItem("refresh_token")
       localStorage.removeItem("auth_token")
       return false
@@ -148,21 +139,19 @@ async function refreshTokenIfNeeded(): Promise<boolean> {
   }
 }
 
-// Enhanced fetch with automatic token refresh
 async function fetchWithAutoRefresh(url: string, options: RequestInit = {}, timeout = 10000) {
   let response = await fetchWithAuth(url, options, timeout)
-  
-  // If unauthorized and we have a refresh token, try to refresh
+
   if (response.status === 401) {
     const refreshed = await refreshTokenIfNeeded()
     if (refreshed) {
-      // Retry the original request with new token
       response = await fetchWithAuth(url, options, timeout)
     }
   }
-  
+
   return response
 }
+
 // Get all customers
 export async function getCustomers(): Promise<Customer[]> {
   const response = await fetchWithAutoRefresh(`${baseUrl}/customers/`, {
@@ -279,4 +268,50 @@ export async function getCustomerByEmail(email: string): Promise<Customer | null
     console.error("Error fetching customer by email:", error)
     throw new CustomerError("Failed to validate customer")
   }
+}
+
+// Get preferred call time
+export async function getPreferredCallTime(): Promise<PreferredCallTimeResponse> {
+  const response = await fetchWithAutoRefresh(`${baseUrl}/customers/call/preferred-call-time`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new CustomerError(error.detail || "Failed to fetch preferred call time")
+  }
+
+  return response.json()
+}
+
+// Update preferred call time
+export async function updatePreferredCallTime(callTime: string): Promise<{
+  status: string
+  message: string
+  customer_id: string
+  preferred_call_time: string
+  updated_by: string
+  updated_at: string
+}> {
+  const response = await fetchWithAutoRefresh(`${baseUrl}/customers/call/preferred-call-time`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      preferred_call_time: callTime,
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new CustomerError(error.detail || "Failed to update preferred call time")
+  }
+
+  return response.json()
 }

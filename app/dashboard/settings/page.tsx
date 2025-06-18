@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { Clock, Calendar, Phone, CreditCard, Plus, X, Bot } from "lucide-react"
+import { Clock, Calendar, Phone, CreditCard, Plus, X, Bot, Save } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,11 +12,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AssistantsManagement } from "@/components/assistants/assistants-management"
+import { getPreferredCallTime, updatePreferredCallTime } from "@/lib/api/customers"
+import { useToast } from "@/hooks/use-toast"
 
 export default function SettingsPage() {
   const [timeWindows, setTimeWindows] = useState([{ start: "09:00", end: "17:00" }])
-
   const [selectedDays, setSelectedDays] = useState(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+  const [preferredCallTime, setPreferredCallTime] = useState("10:00")
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const { toast } = useToast()
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -30,12 +35,66 @@ export default function SettingsPage() {
     "Australia/Sydney",
   ]
 
+  useEffect(() => {
+    fetchPreferredCallTime()
+  }, [])
+
+  const fetchPreferredCallTime = async () => {
+    try {
+      setLoading(true)
+      const response = await getPreferredCallTime()
+      setPreferredCallTime(response.preferred_call_time)
+    } catch (error) {
+      console.error("Error fetching preferred call time:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load preferred call time",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSavePreferredCallTime = async () => {
+    try {
+      setSaving(true)
+      await updatePreferredCallTime(preferredCallTime)
+      toast({
+        title: "Success",
+        description: "Preferred call time updated successfully",
+      })
+    } catch (error: any) {
+      console.error("Error updating preferred call time:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update preferred call time",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const addTimeWindow = () => {
     setTimeWindows([...timeWindows, { start: "09:00", end: "17:00" }])
   }
 
   const removeTimeWindow = (index: number) => {
     setTimeWindows(timeWindows.filter((_, i) => i !== index))
+  }
+
+  if (loading) {
+    return (
+      <div className="container max-w-7xl mx-auto p-6">
+        <div className="flex items-center justify-center h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading settings...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -76,6 +135,46 @@ export default function SettingsPage() {
                   Current time: {format(new Date(), "h:mm a, MMMM do yyyy")}
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Preferred Call Time */}
+        <Card className="border shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-medium flex items-center gap-2">
+              <Phone className="h-5 w-5 text-gray-600" />
+              Preferred Call Time
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Default Call Time for Quick Scheduling</Label>
+              <div className="flex items-center gap-4">
+                <Input
+                  type="time"
+                  value={preferredCallTime}
+                  onChange={(e) => setPreferredCallTime(e.target.value)}
+                  className="w-32"
+                />
+                <Button onClick={handleSavePreferredCallTime} disabled={saving} size="sm">
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This time will be used when scheduling calls for all candidates in a job using the "Schedule Calls"
+                feature.
+              </p>
             </div>
           </CardContent>
         </Card>

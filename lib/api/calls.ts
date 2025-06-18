@@ -102,6 +102,38 @@ export interface ScheduleCallResponse {
   pipeline_status: string
 }
 
+export interface QuickScheduleResponse {
+  status: string
+  message: string
+  job_details: {
+    job_id: string
+    job_title: string
+    job_department?: string
+  }
+  scheduling_summary: {
+    total_candidates_applied: number
+    already_scheduled: number
+    newly_scheduled: number
+    failed_schedules: number
+    scheduled_time: string
+    preferred_call_time: string
+  }
+  scheduled_calls: Array<{
+    call_id: string
+    candidate_id: string
+    candidate_name: string
+    candidate_email: string
+    scheduled_time: string
+    vapi_assistant_id?: string
+  }>
+  failed_schedules?: Array<{
+    candidate_id: string
+    candidate_name: string
+    error: string
+  }>
+  next_steps: string[]
+}
+
 export interface CallListResponse {
   calls: Array<{
     call_id: string
@@ -367,6 +399,30 @@ export async function scheduleCall(request: ScheduleCallRequest): Promise<Schedu
   return response.json()
 }
 
+export async function quickScheduleCalls(jobId: string): Promise<QuickScheduleResponse> {
+  const response = await fetchWithAutoRefresh(`${baseUrl}/calls/quick-schedule/${jobId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    let error
+    try {
+      error = JSON.parse(errorText)
+    } catch {
+      error = { detail: errorText || "Failed to schedule calls" }
+    }
+
+    throw new CallsError(error.detail || "Failed to schedule calls")
+  }
+
+  return response.json()
+}
+
 export async function getCalls(
   params: {
     candidate_id?: string
@@ -397,6 +453,93 @@ export async function getCalls(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
     throw new CallsError(error.detail || "Failed to fetch calls")
+  }
+
+  return response.json()
+}
+
+export async function getCallsByCandidate(
+  candidateId: string,
+  params: {
+    status?: CallStatus
+    limit?: number
+    skip?: number
+  } = {},
+): Promise<{
+  status: string
+  candidate: {
+    id: string
+    name: string
+    email: string
+  }
+  calls: Array<{
+    call_id: string
+    scheduled_time: string
+    call_type: string
+    status: CallStatus
+    vapi_call_id?: string
+    vapi_assistant_id?: string
+    call_duration?: number
+    call_summary?: string
+    candidate_score?: number
+    call_recording_url?: string
+    scheduled_by: string
+    rescheduled_count: number
+    created_at?: string
+    updated_at?: string
+    last_attempt?: string
+    analysis_timestamp?: string
+    job: {
+      id: string
+      title: string
+      department?: string
+      job_type?: string
+    }
+    has_results: boolean
+    has_recording: boolean
+    has_analysis: boolean
+  }>
+  pagination: {
+    total_calls: number
+    returned_calls: number
+    skip: number
+    limit: number
+    has_more: boolean
+    next_skip?: number
+  }
+  summary: {
+    total_calls: number
+    status_breakdown: Record<string, number>
+    completed_calls: number
+    average_duration_seconds: number
+    average_duration_minutes: number
+  }
+}> {
+  const searchParams = new URLSearchParams()
+  if (params.status) searchParams.set("status", params.status)
+  if (params.limit !== undefined) searchParams.set("limit", params.limit.toString())
+  if (params.skip !== undefined) searchParams.set("skip", params.skip.toString())
+
+  const queryString = searchParams.toString()
+  const endpoint = queryString ? `?${queryString}` : ""
+
+  const response = await fetchWithAutoRefresh(`${baseUrl}/calls/candidate/${candidateId}${endpoint}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new CallsError("Candidate not found")
+    }
+    if (response.status === 403) {
+      throw new CallsError("Access denied")
+    }
+    const error = await response.json().catch(() => ({}))
+    throw new CallsError(error.detail || "Failed to fetch candidate calls")
   }
 
   return response.json()
