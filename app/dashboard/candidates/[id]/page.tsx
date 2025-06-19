@@ -883,11 +883,11 @@ export default function CandidateProfilePage() {
                                       <div className="flex items-center gap-3">
                                         <div
                                           className={`w-2 h-2 rounded-full ${
-                                            call.status === "completed"
+                                            call.call_status === "completed"
                                               ? "bg-green-500"
-                                              : call.status === "scheduled"
+                                              : call.call_status === "scheduled"
                                                 ? "bg-blue-500"
-                                                : call.status === "in_progress"
+                                                : call.call_status === "in_progress"
                                                   ? "bg-yellow-500"
                                                   : "bg-red-500"
                                           }`}
@@ -896,9 +896,9 @@ export default function CandidateProfilePage() {
                                           <div className="flex items-center gap-2">
                                             <Badge
                                               variant="outline"
-                                              className={`text-xs font-medium ${getCallStatusColor(call.status)}`}
+                                              className={`text-xs font-medium ${getCallStatusColor(call.call_status)}`}
                                             >
-                                              {call.status.replace("_", " ").toUpperCase()}
+                                              {call.call_status.replace("_", " ").toUpperCase()}
                                             </Badge>
                                             <Badge variant="secondary" className="text-xs">
                                               {call.call_type}
@@ -939,7 +939,7 @@ export default function CandidateProfilePage() {
                                         </div>
                                       )}
 
-                                      {call.status === "completed" && (
+                                      {call.call_status === "completed" && (
                                         <div className="space-y-1">
                                           <p className="text-gray-500 font-medium">Analysis</p>
                                           <div className="flex items-center gap-1">
@@ -960,7 +960,7 @@ export default function CandidateProfilePage() {
                                     </div>
 
                                     {/* Action Indicator */}
-                                    {call.status === "completed" && (
+                                    {call.call_status === "completed" && (
                                       <div className="mt-3 pt-3 border-t border-gray-100">
                                         <div className="flex items-center justify-between">
                                           <p className="text-xs text-gray-500">

@@ -10,7 +10,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   X,
   PlayCircle,
-  Clock,
   User,
   MessageSquare,
   BarChart3,
@@ -195,46 +194,14 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
               {activeSection === "overview" && (
                 <div className="space-y-6">
                   {/* Call Summary Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <Clock className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                        <div className="text-2xl font-bold text-gray-900">
-                          {formatDuration(performance_metrics?.duration_minutes || call_details?.call_duration)}
-                        </div>
-                        <p className="text-xs text-gray-500">Duration</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <Target className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                        <div
-                          className={`text-2xl font-bold ${getScoreColor(analysis_summary?.overall_score || call_details?.candidate_score)}`}
-                        >
-                          {analysis_summary?.overall_score || call_details?.candidate_score || 0}
-                        </div>
-                        <p className="text-xs text-gray-500">Overall Score</p>
-                      </CardContent>
-                    </Card>
-
+                  <div className="grid grid-cols-1 gap-4 max-w-sm">
                     <Card>
                       <CardContent className="p-4 text-center">
                         <MessageSquare className="h-8 w-8 mx-auto mb-2 text-purple-600" />
                         <div className="text-2xl font-bold text-gray-900">
                           {performance_metrics?.questions_asked || questions.length || 0}
                         </div>
-                        <p className="text-xs text-gray-500">Questions</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <CheckCircle className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
-                        <div className="text-2xl font-bold text-gray-900">
-                          {Math.round(performance_metrics?.call_completion_rate || 0)}%
-                        </div>
-                        <p className="text-xs text-gray-500">Completion</p>
+                        <p className="text-xs text-gray-500">Questions Asked</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -516,9 +483,11 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                     <CardContent className="space-y-4">
                       <div>
                         <h4 className="font-medium text-gray-900 mb-2">Question:</h4>
-                        <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
-                          {questions[currentQuestionIndex]?.question || "No question available"}
-                        </p>
+                        <div className="text-gray-700 bg-gray-50 p-3 rounded-lg max-w-full">
+                          <p className="break-words whitespace-pre-wrap">
+                            {questions[currentQuestionIndex]?.question || "No question available"}
+                          </p>
+                        </div>
                       </div>
 
                       <div>
@@ -526,9 +495,11 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                         <Badge variant="outline" className="mb-2">
                           {questions[currentQuestionIndex]?.response_quality || "Unknown"}
                         </Badge>
-                        <p className="text-sm text-gray-700">
-                          {questions[currentQuestionIndex]?.notes || "No notes available"}
-                        </p>
+                        <div className="text-sm text-gray-700 max-w-full">
+                          <p className="break-words whitespace-pre-wrap">
+                            {questions[currentQuestionIndex]?.notes || "No notes available"}
+                          </p>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -556,7 +527,7 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                                 {q?.score || 0}
                               </Badge>
                             </div>
-                            <p className="text-xs text-gray-600 mt-1 truncate">
+                            <p className="text-xs text-gray-600 mt-1 break-words line-clamp-2">
                               {q?.question || "No question available"}
                             </p>
                           </button>
