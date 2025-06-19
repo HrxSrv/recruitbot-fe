@@ -211,6 +211,32 @@ export async function getJob(id: string): Promise<Job> {
     throw error
   }
 }
+export interface JobNameResponse {
+  job_id: string;
+  job_name: string; // This matches your backend response
+}
+
+// 2. Fix the getJobName function with proper typing
+export async function getJobName(id: string): Promise<JobNameResponse> {
+  try {
+    const response = await fetchWithAutoRefresh(`${API_BASE_URL}/jobs/${id}/name`)
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Authentication required. Please log in again.")
+      }
+      if (response.status === 404) {
+        throw new Error("Job not found.")
+      }
+      throw new Error(`Failed to fetch job: ${response.statusText}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error("Error fetching job:", error)
+    throw error
+  }
+}
 
 export async function createJob(jobData: CreateJobData): Promise<Job> {
   try {

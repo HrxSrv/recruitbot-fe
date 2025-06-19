@@ -40,6 +40,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { getCandidate, downloadResume, type Candidate, type CallQA, type JobApplication } from "@/lib/api/candidates"
+import { getJobName } from "@/lib/api/jobs"
 import { getCallDetails, getCallsByCandidateAndJob, type CallDetailsResponse, type CallStatus } from "@/lib/api/calls"
 import { JobAssociationDialog } from "@/components/candidates/job-association-dialog"
 import { ScheduleCallDialog } from "@/components/candidates/schedule-call-dialog"
@@ -154,13 +155,12 @@ function InterviewWizard({
               <button
                 key={index}
                 onClick={() => setCurrentStep(index)}
-                className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
-                  index === currentStep
+                className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${index === currentStep
                     ? "bg-purple-600 text-white"
                     : index < currentStep
                       ? "bg-green-100 text-green-700"
                       : "bg-gray-100 text-gray-500"
-                }`}
+                  }`}
               >
                 {index + 1}
               </button>
@@ -278,7 +278,7 @@ export default function CandidateProfilePage() {
   const [jobAssociationDialogOpen, setJobAssociationDialogOpen] = useState(false)
   const [scheduleCallDialogOpen, setScheduleCallDialogOpen] = useState(false)
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null)
-
+  const [jobNames, setJobNames] = useState<Record<string, string>>({})
   useEffect(() => {
     const fetchCandidate = async () => {
       try {
@@ -289,25 +289,33 @@ export default function CandidateProfilePage() {
 
         // Fetch calls for each job application using getCallsByCandidateAndJob
         const callsMap: Record<string, any> = {}
+        const jobNamesMap: Record<string, string> = {}
 
         if (candidateData.applications && candidateData.applications.length > 0) {
           await Promise.all(
             candidateData.applications.map(async (application) => {
               try {
+                // Fetch calls
                 const callsResponse = await getCallsByCandidateAndJob(candidateId, application.job_id)
                 callsMap[application.job_id] = callsResponse.calls
+
+                // Fetch job name
+                const jobName = await getJobName(application.job_id)
+                jobNamesMap[application.job_id] = jobName.job_name || `Job ${application.job_id}`
               } catch (error) {
                 console.error(
-                  `Failed to fetch calls for candidate ${candidateId} and job ${application.job_id}:`,
+                  `Failed to fetch data for candidate ${candidateId} and job ${application.job_id}:`,
                   error,
                 )
                 callsMap[application.job_id] = []
+                jobNamesMap[application.job_id] = `Job ${application.job_id}` // Fallback
               }
             }),
           )
         }
 
         setCallsData(callsMap)
+        setJobNames(jobNamesMap)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch candidate"
         setError(errorMessage)
@@ -325,7 +333,7 @@ export default function CandidateProfilePage() {
       fetchCandidate()
     }
   }, [candidateId, toast])
-
+  console.log(jobNames)
   const handleDownloadResume = async () => {
     try {
       const blob = await downloadResume(candidateId)
@@ -649,11 +657,10 @@ export default function CandidateProfilePage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
                     ? "border-gray-800 text-gray-900"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -818,8 +825,9 @@ export default function CandidateProfilePage() {
                         <div className="flex justify-between items-start">
                           <CardTitle className="flex items-center gap-2">
                             <Target className="h-5 w-5 text-blue-600" />
-                            Job Application - {application.job_id}
+                            {jobNames[application.job_id] || `Job ${application.job_id}`}
                           </CardTitle>
+
                           <Badge className={`border ${getStatusColor(application.status)}`}>{application.status}</Badge>
                         </div>
                       </CardHeader>
@@ -882,15 +890,14 @@ export default function CandidateProfilePage() {
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center gap-3">
                                         <div
-                                          className={`w-2 h-2 rounded-full ${
-                                            call.call_status === "completed"
+                                          className={`w-2 h-2 rounded-full ${call.call_status === "completed"
                                               ? "bg-green-500"
                                               : call.call_status === "scheduled"
                                                 ? "bg-blue-500"
                                                 : call.call_status === "in_progress"
                                                   ? "bg-yellow-500"
                                                   : "bg-red-500"
-                                          }`}
+                                            }`}
                                         />
                                         <div>
                                           <div className="flex items-center gap-2">
@@ -1133,7 +1140,7 @@ export default function CandidateProfilePage() {
             candidateId={candidateId}
             candidateName={candidate.personal_info.name}
             jobId={selectedApplication.job_id}
-            jobTitle={`Job ${selectedApplication.job_id}`}
+            jobTitle={jobNames[selectedApplication.job_id] || `Job ${selectedApplication.job_id}`}
             onScheduleComplete={() => {
               toast({
                 title: "Success",
