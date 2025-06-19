@@ -155,7 +155,8 @@ export default function SettingsPage() {
                   type="time"
                   value={preferredCallTime}
                   onChange={(e) => setPreferredCallTime(e.target.value)}
-                  className="w-32"
+                  className="w-40"
+                  step="300"
                 />
                 <Button onClick={handleSavePreferredCallTime} disabled={saving} size="sm">
                   {saving ? (
@@ -173,14 +174,24 @@ export default function SettingsPage() {
               </div>
               <p className="text-sm text-muted-foreground">
                 This time will be used when scheduling calls for all candidates in a job using the "Schedule Calls"
-                feature.
+                feature. Time format: 24-hour (HH:MM)
               </p>
+              {preferredCallTime && (
+                <p className="text-xs text-blue-600">
+                  Preview:{" "}
+                  {new Date(`2000-01-01T${preferredCallTime}`).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
 
         {/* Call Time Periods */}
-        <Card className="border shadow-sm">
+        {/* <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg font-medium flex items-center gap-2">
               <Calendar className="h-5 w-5 text-gray-600" />
@@ -197,6 +208,7 @@ export default function SettingsPage() {
                       <Input
                         type="time"
                         value={window.start}
+                        step="300"
                         onChange={(e) => {
                           const newWindows = [...timeWindows]
                           newWindows[index].start = e.target.value
@@ -207,6 +219,7 @@ export default function SettingsPage() {
                       <Input
                         type="time"
                         value={window.end}
+                        step="300"
                         onChange={(e) => {
                           const newWindows = [...timeWindows]
                           newWindows[index].end = e.target.value
@@ -252,7 +265,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Call Limits */}
         <Card className="border shadow-sm">

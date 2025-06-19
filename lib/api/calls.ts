@@ -162,6 +162,74 @@ export interface CallListResponse {
   }
 }
 
+export interface CallsByCandidateAndJobResponse {
+  status: string
+  candidate: {
+    id: string
+    name: string
+    email: string
+  }
+  job: {
+    id: string
+    title: string
+    department?: string
+    job_type?: string
+    status?: string
+  }
+  calls: Array<{
+    call_id: string
+    scheduled_time: string
+    call_type: string
+    status: CallStatus
+    vapi_call_id?: string
+    vapi_assistant_id?: string
+    call_duration?: number
+    call_summary?: string
+    candidate_score?: number
+    call_recording_url?: string
+    scheduled_by: string
+    rescheduled_count: number
+    created_at?: string
+    updated_at?: string
+    last_attempt?: string
+    analysis_timestamp?: string
+    job: {
+      id: string
+      title: string
+      department?: string
+      job_type?: string
+    }
+    has_results: boolean
+    has_recording: boolean
+    has_analysis: boolean
+  }>
+  pagination: {
+    total_calls: number
+    returned_calls: number
+    skip: number
+    limit: number
+    has_more: boolean
+    next_skip?: number
+  }
+  summary: {
+    total_calls: number
+    status_breakdown: Record<string, number>
+    completed_calls: number
+    average_duration_seconds: number
+    average_duration_minutes: number
+  }
+  filters_applied: {
+    candidate_id: string
+    job_id: string
+    call_status?: CallStatus
+    customer_id: string
+  }
+  meta: {
+    retrieved_at: string
+    query_user: string
+  }
+}
+
 export interface CallDetailsResponse {
   status: string
   call_details: CallDetails
@@ -453,6 +521,45 @@ export async function getCalls(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
     throw new CallsError(error.detail || "Failed to fetch calls")
+  }
+
+  return response.json()
+}
+
+export async function getCallsByCandidateAndJob(
+  candidateId: string,
+  jobId: string,
+  params: {
+    call_status?: CallStatus
+    limit?: number
+    skip?: number
+  } = {},
+): Promise<CallsByCandidateAndJobResponse> {
+  const searchParams = new URLSearchParams()
+  if (params.call_status) searchParams.set("call_status", params.call_status)
+  if (params.limit !== undefined) searchParams.set("limit", params.limit.toString())
+  if (params.skip !== undefined) searchParams.set("skip", params.skip.toString())
+
+  const queryString = searchParams.toString()
+  const endpoint = queryString ? `?${queryString}` : ""
+
+  const response = await fetchWithAutoRefresh(`${baseUrl}/calls/candidate/${candidateId}/job/${jobId}${endpoint}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new CallsError("Candidate or job not found")
+    }
+    if (response.status === 403) {
+      throw new CallsError("Access denied")
+    }
+    const error = await response.json().catch(() => ({}))
+    throw new CallsError(error.detail || "Failed to fetch calls for candidate and job")
   }
 
   return response.json()

@@ -161,7 +161,7 @@ export function ScheduleCallDialog({
               <Calendar className="h-4 w-4 text-green-600" />
               Scheduled Time <span className="text-sm text-gray-500">(Optional)</span>
             </Label>
-            <Input
+            <Input 
               id="scheduled-time"
               type="datetime-local"
               value={scheduledTime}

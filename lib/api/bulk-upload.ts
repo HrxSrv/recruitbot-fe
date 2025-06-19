@@ -170,3 +170,83 @@ export async function listBulkUploadJobs(
     throw error
   }
 }
+
+// CSV Upload Types
+export interface CSVUploadResponse {
+  status: string
+  message: string
+  total_records: number
+  successful_uploads: number
+  failed_uploads: number
+  duplicate_emails: number
+  created_candidates: Array<{
+    candidate_id: string
+    name: string
+    email?: string
+    phone: string
+    location?: string
+    row_number: number
+    job_title: string
+    applied_to_job: boolean
+  }>
+  failed_records: Array<{
+    row_number: number
+    record_data: any
+    error: string
+    existing_candidate_id?: string
+  }>
+  duplicate_records: Array<{
+    row_number: number
+    record_data: any
+    error: string
+    existing_candidate_id?: string
+  }>
+  processing_time_seconds: number
+  uploaded_by: string
+  upload_timestamp: string
+}
+
+export async function uploadCSVCandidates(jobId: string, csvFile: File): Promise<CSVUploadResponse> {
+  try {
+    const formData = new FormData()
+    formData.append("csv_file", csvFile)
+
+    const response = await fetchWithAuth(`${API_BASE_URL}/candidates/upload-csv-candidates/${jobId}`, {
+      method: "POST",
+      body: formData,
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Authentication required. Please log in again.")
+      }
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || `Failed to upload CSV: ${response.statusText}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Error uploading CSV:", error)
+    throw error
+  }
+}
+
+export function downloadSampleCSV() {
+  const csvContent = `name,phone,email,location
+John Doe,+1234567890,john.doe@example.com,New York NY
+Jane Smith,+1987654321,jane.smith@example.com,Los Angeles CA
+Mike Johnson,+1555123456,,Chicago IL
+Sarah Wilson,+1444987654,sarah.wilson@example.com,`
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+  const link = document.createElement("a")
+  const url = URL.createObjectURL(blob)
+
+  link.setAttribute("href", url)
+  link.setAttribute("download", "sample_candidates.csv")
+  link.style.visibility = "hidden"
+
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}

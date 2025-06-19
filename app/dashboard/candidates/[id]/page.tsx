@@ -28,6 +28,8 @@ import {
   ChevronRight,
   X,
   Loader2,
+  CheckCircle,
+  Clock,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -38,11 +40,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { getCandidate, downloadResume, type Candidate, type CallQA, type JobApplication } from "@/lib/api/candidates"
-import { getCallDetails, type CallDetailsResponse, type CallStatus } from "@/lib/api/calls"
+import { getCallDetails, getCallsByCandidateAndJob, type CallDetailsResponse, type CallStatus } from "@/lib/api/calls"
 import { JobAssociationDialog } from "@/components/candidates/job-association-dialog"
 import { ScheduleCallDialog } from "@/components/candidates/schedule-call-dialog"
 import { CallAnalysisDialog } from "@/components/candidates/call-analysis-dialog"
-import { getCallsByCandidate } from "@/lib/api/calls"
 
 // Interview Wizard Component with failsafes
 function InterviewWizard({
@@ -286,24 +287,27 @@ export default function CandidateProfilePage() {
         const candidateData = await getCandidate(candidateId)
         setCandidate(candidateData)
 
-        // Fetch all calls for this candidate using the new endpoint
-        try {
-          const candidateCallsResponse = await getCallsByCandidate(candidateId)
+        // Fetch calls for each job application using getCallsByCandidateAndJob
+        const callsMap: Record<string, any> = {}
 
-          // Group calls by job_id for easy lookup
-          const callsMap: Record<string, any> = {}
-          candidateCallsResponse.calls.forEach((call) => {
-            const jobId = call.job.id
-            if (!callsMap[jobId]) {
-              callsMap[jobId] = []
-            }
-            callsMap[jobId].push(call)
-          })
-          setCallsData(callsMap)
-        } catch (error) {
-          console.error(`Failed to fetch calls for candidate ${candidateId}:`, error)
-          setCallsData({})
+        if (candidateData.applications && candidateData.applications.length > 0) {
+          await Promise.all(
+            candidateData.applications.map(async (application) => {
+              try {
+                const callsResponse = await getCallsByCandidateAndJob(candidateId, application.job_id)
+                callsMap[application.job_id] = callsResponse.calls
+              } catch (error) {
+                console.error(
+                  `Failed to fetch calls for candidate ${candidateId} and job ${application.job_id}:`,
+                  error,
+                )
+                callsMap[application.job_id] = []
+              }
+            }),
+          )
         }
+
+        setCallsData(callsMap)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch candidate"
         setError(errorMessage)
@@ -846,101 +850,151 @@ export default function CandidateProfilePage() {
 
                         {/* Call/Interview Section */}
                         {jobCalls.length > 0 ? (
-                          <Card className="bg-blue-50 border-blue-200">
-                            <CardHeader>
-                              <CardTitle className="flex items-center gap-2 text-blue-800">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                 <Phone className="h-5 w-5 text-blue-600" />
-                                Scheduled Calls ({jobCalls.length})
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
+                                Interview History ({jobCalls.length})
+                              </h4>
+                              <Button
+                                onClick={() => {
+                                  setSelectedApplication(application)
+                                  setScheduleCallDialogOpen(true)
+                                }}
+                                variant="outline"
+                                size="sm"
+                                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                              >
+                                <Phone className="h-4 w-4 mr-2" />
+                                Schedule New Call
+                              </Button>
+                            </div>
+
+                            <div className="space-y-3">
                               {jobCalls.map((call: any, callIndex: number) => (
                                 <div
                                   key={callIndex}
-                                  className="p-4 bg-white rounded-lg border border-blue-200 hover:shadow-md transition-shadow cursor-pointer"
+                                  className="group relative bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all duration-200 cursor-pointer"
                                   onClick={() => handleViewCallAnalysis(call.call_id)}
                                 >
-                                  <div className="flex justify-between items-start mb-3">
-                                    <div className="flex items-center gap-2">
-                                      <Badge className={`border ${getCallStatusColor(call.status)}`}>
-                                        {call.status}
-                                      </Badge>
-                                      <Badge variant="outline" className="text-xs">
-                                        {call.call_type}
-                                      </Badge>
-                                    </div>
-                                    {call.candidate_score && (
-                                      <Badge className={`${getScoreColor(call.candidate_score)}`}>
-                                        Score: {call.candidate_score}%
-                                      </Badge>
-                                    )}
-                                  </div>
+                                  <div className="p-4">
+                                    {/* Header Row */}
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <div
+                                          className={`w-2 h-2 rounded-full ${
+                                            call.status === "completed"
+                                              ? "bg-green-500"
+                                              : call.status === "scheduled"
+                                                ? "bg-blue-500"
+                                                : call.status === "in_progress"
+                                                  ? "bg-yellow-500"
+                                                  : "bg-red-500"
+                                          }`}
+                                        />
+                                        <div>
+                                          <div className="flex items-center gap-2">
+                                            <Badge
+                                              variant="outline"
+                                              className={`text-xs font-medium ${getCallStatusColor(call.status)}`}
+                                            >
+                                              {call.status.replace("_", " ").toUpperCase()}
+                                            </Badge>
+                                            <Badge variant="secondary" className="text-xs">
+                                              {call.call_type}
+                                            </Badge>
+                                          </div>
+                                          <p className="text-sm text-gray-600 mt-1">Call ID: {call.call_id}</p>
+                                        </div>
+                                      </div>
 
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                    <div>
-                                      <p className="text-blue-600 mb-1">Scheduled Time</p>
-                                      <p className="font-medium text-blue-800">
-                                        {new Date(call.scheduled_time).toLocaleString()}
-                                      </p>
+                                      {call.candidate_score && (
+                                        <Badge className={`${getScoreColor(call.candidate_score)} font-semibold`}>
+                                          {call.candidate_score}%
+                                        </Badge>
+                                      )}
                                     </div>
-                                    {call.call_duration && (
-                                      <div>
-                                        <p className="text-blue-600 mb-1">Duration</p>
-                                        <p className="font-medium text-blue-800">
-                                          {Math.floor(call.call_duration / 60)}m {call.call_duration % 60}s
+
+                                    {/* Details Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                      <div className="space-y-1">
+                                        <p className="text-gray-500 font-medium">Scheduled</p>
+                                        <p className="text-gray-900">
+                                          {new Date(call.scheduled_time).toLocaleDateString()}
+                                        </p>
+                                        <p className="text-gray-600 text-xs">
+                                          {new Date(call.scheduled_time).toLocaleTimeString([], {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })}
                                         </p>
                                       </div>
-                                    )}
+
+                                      {call.call_duration && (
+                                        <div className="space-y-1">
+                                          <p className="text-gray-500 font-medium">Duration</p>
+                                          <p className="text-gray-900">
+                                            {Math.floor(call.call_duration / 60)}m {call.call_duration % 60}s
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {call.status === "completed" && (
+                                        <div className="space-y-1">
+                                          <p className="text-gray-500 font-medium">Analysis</p>
+                                          <div className="flex items-center gap-1">
+                                            {call.has_analysis ? (
+                                              <>
+                                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                                <span className="text-green-700 font-medium">Complete</span>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Clock className="h-4 w-4 text-yellow-600" />
+                                                <span className="text-yellow-700 font-medium">Processing</span>
+                                              </>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Action Indicator */}
                                     {call.status === "completed" && (
-                                      <div>
-                                        <p className="text-blue-600 mb-1">Analysis</p>
-                                        <p className="font-medium text-blue-800">
-                                          {call.has_analysis ? "✅ Available" : "⏳ Processing"}
-                                        </p>
+                                      <div className="mt-3 pt-3 border-t border-gray-100">
+                                        <div className="flex items-center justify-between">
+                                          <p className="text-xs text-gray-500">
+                                            Click to view detailed analysis and transcript
+                                          </p>
+                                          <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                                        </div>
                                       </div>
                                     )}
                                   </div>
-
-                                  {call.status === "completed" && (
-                                    <div className="mt-3 pt-3 border-t border-blue-200">
-                                      <p className="text-xs text-blue-600">Click to view detailed analysis</p>
-                                    </div>
-                                  )}
                                 </div>
                               ))}
-
-                              <div className="pt-3 border-t border-blue-200">
-                                <Button
-                                  onClick={() => {
-                                    setSelectedApplication(application)
-                                    setScheduleCallDialogOpen(true)
-                                  }}
-                                  variant="outline"
-                                  className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
-                                >
-                                  <Phone className="h-4 w-4 mr-2" />
-                                  Schedule Another Call
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
+                            </div>
+                          </div>
                         ) : (
                           <Card className="bg-gray-50 border-gray-200">
                             <CardContent className="text-center py-8">
-                              <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                              <h3 className="text-lg font-medium text-gray-900 mb-2">No Call Scheduled</h3>
-                              <p className="text-gray-500 mb-4">
-                                This application hasn't been scheduled for a call yet.
+                              <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+                                <MessageSquare className="h-8 w-8 text-gray-400" />
+                              </div>
+                              <h3 className="text-lg font-medium text-gray-900 mb-2">No Interviews Scheduled</h3>
+                              <p className="text-gray-500 mb-4 max-w-sm mx-auto">
+                                This application hasn't been scheduled for an interview yet. Schedule a call to begin
+                                the interview process.
                               </p>
                               <Button
                                 onClick={() => {
                                   setSelectedApplication(application)
                                   setScheduleCallDialogOpen(true)
                                 }}
-                                className="bg-purple-600 hover:bg-purple-700 text-white"
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
                               >
                                 <Phone className="h-4 w-4 mr-2" />
-                                Schedule Call
+                                Schedule Interview
                               </Button>
                             </CardContent>
                           </Card>
