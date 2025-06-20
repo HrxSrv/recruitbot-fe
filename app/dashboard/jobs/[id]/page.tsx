@@ -16,6 +16,7 @@ import {
   Pause,
   Upload,
   PhoneCall,
+  Globe,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useState, useEffect } from "react"
@@ -25,7 +26,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { type Job, getJob, updateJob, deleteJob, publishJob, pauseJob, resumeJob } from "@/lib/api/jobs"
-import { quickScheduleCalls } from "@/lib/api/calls"
 import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { CreateJobDialog } from "@/components/jobs/create-job-dialog"
 import { BulkUploadDialog } from "@/components/candidates/bulk-upload-resumes"
+import { QuickScheduleDialog } from "@/components/jobs/quick-schedule-dialog"
 
 export default function JobDetailsPage() {
   const params = useParams()
@@ -51,6 +52,7 @@ export default function JobDetailsPage() {
   const { toast } = useToast()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false)
+  const [quickScheduleDialogOpen, setQuickScheduleDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchJob()
@@ -171,50 +173,17 @@ export default function JobDetailsPage() {
     }
   }
 
-  const handleQuickSchedule = async () => {
-    if (!job) return
-
-    try {
-      setActionLoading("schedule")
-      const result = await quickScheduleCalls(job.id)
-
-      toast({
-        title: "Success",
-        description: `${result.scheduling_summary.newly_scheduled} calls scheduled successfully`,
-      })
-
-      // Show detailed results
-      if (result.scheduling_summary.newly_scheduled > 0) {
-        toast({
-          title: "Scheduling Complete",
-          description: `Scheduled ${result.scheduling_summary.newly_scheduled} calls for ${result.scheduling_summary.scheduled_time}`,
-        })
-      } else if (result.scheduling_summary.already_scheduled > 0) {
-        toast({
-          title: "No New Calls",
-          description: "All eligible candidates already have scheduled calls",
-        })
-      } else {
-        toast({
-          title: "No Candidates",
-          description: "No candidates have applied to this job yet",
-        })
-      }
-    } catch (error: any) {
-      console.error("Error scheduling calls:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to schedule calls",
-        variant: "destructive",
-      })
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
   const handleUploadResumeComplete = () => {
     // Refresh job data to update application count
     fetchJob()
+  }
+
+  const handleScheduleComplete = () => {
+    toast({
+      title: "Success",
+      description: "Calls have been scheduled successfully",
+    })
+    // Optionally refresh job data or navigate to calls page
   }
 
   if (loading) {
@@ -322,26 +291,14 @@ export default function JobDetailsPage() {
             Add Candidates
           </Button>
 
-          { (
-            <Button
-              onClick={handleQuickSchedule}
-              disabled={actionLoading === "schedule"}
-              variant="outline"
-              className="border-green-200 text-green-700 hover:bg-green-50"
-            >
-              {actionLoading === "schedule" ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700 mr-2"></div>
-                  Scheduling...
-                </>
-              ) : (
-                <>
-                  <PhoneCall className="mr-2 h-4 w-4" />
-                  Schedule Calls
-                </>
-              )}
-            </Button>
-          )}
+          <Button
+            onClick={() => setQuickScheduleDialogOpen(true)}
+            variant="outline"
+            className="border-green-200 text-green-700 hover:bg-green-50"
+          >
+            <PhoneCall className="mr-2 h-4 w-4" />
+            Schedule Calls
+          </Button>
         </div>
       </div>
 
@@ -373,6 +330,9 @@ export default function JobDetailsPage() {
                     {job.experience_level.charAt(0).toUpperCase() + job.experience_level.slice(1)} Level
                   </Badge>
                 )}
+                <Badge variant="outline" className="bg-blue-50">
+                  {job.language.charAt(0).toUpperCase() + job.language.slice(1)}
+                </Badge>
               </div>
             </div>
           </CardHeader>
@@ -390,6 +350,10 @@ export default function JobDetailsPage() {
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Briefcase className="h-4 w-4" />
                   <span>{getJobTypeLabel(job.job_type)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Globe className="h-4 w-4" />
+                  <span>{job.language.charAt(0).toUpperCase() + job.language.slice(1)}</span>
                 </div>
               </div>
               <div className="space-y-4">
@@ -574,6 +538,15 @@ export default function JobDetailsPage() {
         onJobCreated={fetchJob}
         editJob={job}
         mode="edit"
+      />
+
+      {/* Quick Schedule Dialog */}
+      <QuickScheduleDialog
+        open={quickScheduleDialogOpen}
+        onOpenChange={setQuickScheduleDialogOpen}
+        jobId={jobId}
+        jobTitle={job.title}
+        onScheduleComplete={handleScheduleComplete}
       />
     </div>
   )

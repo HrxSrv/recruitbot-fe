@@ -25,6 +25,10 @@ export interface ScheduleCallRequest {
   notes?: string
 }
 
+export interface QuickScheduleRequest {
+  scheduled_time?: string
+}
+
 export interface CallDetails {
   call_id: string
   scheduled_time: string
@@ -117,6 +121,7 @@ export interface QuickScheduleResponse {
     failed_schedules: number
     scheduled_time: string
     preferred_call_time: string
+    time_source: "custom" | "preferred" | "default"
   }
   scheduled_calls: Array<{
     call_id: string
@@ -467,13 +472,17 @@ export async function scheduleCall(request: ScheduleCallRequest): Promise<Schedu
   return response.json()
 }
 
-export async function quickScheduleCalls(jobId: string): Promise<QuickScheduleResponse> {
+export async function quickScheduleCalls(
+  jobId: string,
+  request?: QuickScheduleRequest,
+): Promise<QuickScheduleResponse> {
   const response = await fetchWithAutoRefresh(`${baseUrl}/calls/quick-schedule/${jobId}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include",
+    body: request ? JSON.stringify(request) : undefined,
   })
 
   if (!response.ok) {

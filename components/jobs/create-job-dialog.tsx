@@ -49,6 +49,7 @@ const jobSchema = z.object({
     })
     .optional(),
   application_deadline: z.string().optional(),
+  language: z.string().min(1, "Language is required"),
 })
 
 type JobFormData = z.infer<typeof jobSchema>
@@ -93,6 +94,7 @@ export function CreateJobDialog({
       currency: "USD",
     },
     application_deadline: "",
+    language: "",
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -115,6 +117,7 @@ export function CreateJobDialog({
           currency: "USD",
         },
         application_deadline: editJob.application_deadline || "",
+        language: editJob.language,
       })
     }
   }, [editJob, mode])
@@ -126,6 +129,7 @@ export function CreateJobDialog({
       if (!formData.title.trim()) newErrors.title = "Job title is required"
       if (!formData.description.trim()) newErrors.description = "Description is required"
       if (formData.description.length < 10) newErrors.description = "Description must be at least 10 characters"
+      if (!formData.language.trim()) newErrors.language = "Language is required"
     }
 
     setErrors(newErrors)
@@ -174,6 +178,7 @@ export function CreateJobDialog({
         currency: "USD",
       },
       application_deadline: "",
+      language: "",
     })
     setCurrentStep(1)
     setErrors({})
@@ -411,6 +416,23 @@ export function CreateJobDialog({
                       onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">Language *</Label>
+                  <Select
+                    value={formData.language}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, language: value }))}
+                  >
+                    <SelectTrigger id="language" className={errors.language ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="english">English</SelectItem>
+                      <SelectItem value="hindi">Hindi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.language && <p className="text-sm text-red-500">{errors.language}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

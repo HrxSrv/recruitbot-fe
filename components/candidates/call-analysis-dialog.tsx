@@ -227,8 +227,16 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                           </Badge>
                         </div>
                         <p className="text-gray-700 leading-relaxed">
-                          {analysis_summary.executive_summary || "No executive summary available."}
+                          {analysis_summary?.executive_summary || 
+                           call_details?.gemini_analysis?.executive_summary || 
+                           "No executive summary available."}
                         </p>
+                        {call_details?.gemini_analysis?.next_steps && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <h5 className="font-medium text-gray-900 mb-1">Next Steps:</h5>
+                            <p className="text-sm text-gray-700">{call_details.gemini_analysis.next_steps}</p>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   )}
@@ -243,9 +251,13 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                         <div>
                           <div className="flex justify-between text-sm mb-2">
                             <span>Technical Skills</span>
-                            <span className="font-medium">{analysis_summary.technical_score || 0}/100</span>
+                            <span className="font-medium">
+                              {call_details?.gemini_analysis?.technical_evaluation?.technical_score || 
+                               analysis_summary?.technical_score || 0}/100
+                            </span>
                           </div>
-                          <Progress value={analysis_summary.technical_score || 0} className="h-2" />
+                          <Progress value={call_details?.gemini_analysis?.technical_evaluation?.technical_score || 
+                                           analysis_summary?.technical_score || 0} className="h-2" />
                         </div>
                         <div>
                           <div className="flex justify-between text-sm mb-2">
@@ -303,6 +315,12 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                           </div>
                         )}
                       </div>
+                      {call_details?.gemini_analysis?.interview_duration_assessment && (
+                        <div className="mt-3 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                          <h5 className="font-medium text-yellow-800 mb-1">Duration Assessment:</h5>
+                          <p className="text-sm text-yellow-700">{call_details.gemini_analysis.interview_duration_assessment}</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
@@ -379,7 +397,7 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
 
                   {/* Detailed Evaluations */}
                   <div className="grid md:grid-cols-2 gap-6">
-                    {geminiAnalysis.technical_evaluation && (
+                    {geminiAnalysis.technical_evaluation && (true && (
                       <Card>
                         <CardHeader>
                           <CardTitle className="text-base">Technical Evaluation</CardTitle>
@@ -395,7 +413,7 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                           </p>
                         </CardContent>
                       </Card>
-                    )}
+                    ))}
 
                     {geminiAnalysis.communication_evaluation && (
                       <Card>

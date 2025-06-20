@@ -167,14 +167,6 @@ export default function CandidatesPage() {
     }
   }
 
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-700"
-    if (score >= 80) return "text-blue-700"
-    if (score >= 70) return "text-yellow-700"
-    if (score >= 60) return "text-orange-700"
-    return "text-red-700"
-  }
-
   const handleUploadComplete = () => {
     // Refresh candidates list
     fetchCandidates()
@@ -357,13 +349,11 @@ export default function CandidatesPage() {
                     </div>
                   </div>
 
-                  {/* Center Section - Match Score */}
+                  {/* Center Section - Experience */}
                   <div className="flex-1 flex justify-center items-center px-6 border-x border-slate-100">
                     <div className="text-center">
-                      <p className={`text-3xl font-bold ${getScoreColor(candidate.resume_analysis.matching_score)}`}>
-                        {candidate.resume_analysis.matching_score}%
-                      </p>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Match Score</p>
+                      <p className="text-3xl font-bold text-slate-700">{candidate.resume_analysis.experience_years}</p>
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Years Exp</p>
                     </div>
                   </div>
 
@@ -394,37 +384,6 @@ export default function CandidatesPage() {
                     )}
                   </div>
                 </div>
-
-                {/* Footer - Enhanced with better spacing
-        <div className="mt-6 pt-4 border-t border-slate-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6 text-xs text-slate-500">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                <span className="font-medium">
-                  Added {candidate.created_at ? new Date(candidate.created_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  }) : "Unknown"}
-                </span>
-              </div>
-              
-              {candidate.applications.length > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Briefcase className="h-3.5 w-3.5" />
-                  <span className="font-medium">
-                    Applied to: {candidate.applications.map((app) => getJobTitle(app.job_id)).join(", ")}
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            <div className="text-xs text-slate-400 font-medium">
-              {pagination.total} total candidates
-            </div>
-          </div>
-        </div> */}
               </CardContent>
             </Card>
           ))}

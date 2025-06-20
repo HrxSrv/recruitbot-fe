@@ -11,7 +11,6 @@ import {
   Calendar,
   FileText,
   Download,
-  Star,
   Briefcase,
   User,
   AlertCircle,
@@ -46,6 +45,36 @@ import { JobAssociationDialog } from "@/components/candidates/job-association-di
 import { ScheduleCallDialog } from "@/components/candidates/schedule-call-dialog"
 import { CallAnalysisDialog } from "@/components/candidates/call-analysis-dialog"
 
+// Utility function to format dates in user's timezone
+const formatDateInUserTimezone = (dateString: string | Date) => {
+  const date = new Date(dateString)
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  })
+}
+
+const formatDateOnly = (dateString: string | Date) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
+const formatTimeOnly = (dateString: string | Date) => {
+  const date = new Date(dateString)
+  return date.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
 // Interview Wizard Component with failsafes
 function InterviewWizard({
   isOpen,
@@ -70,15 +99,6 @@ function InterviewWizard({
 
   const questions = interview.questions_answers
   const totalSteps = questions.length
-
-  const getScoreColor = (score: number | null | undefined) => {
-    if (typeof score !== "number") return "text-gray-700 bg-gray-100"
-    if (score >= 90) return "text-green-700 bg-green-100"
-    if (score >= 80) return "text-blue-700 bg-blue-100"
-    if (score >= 70) return "text-yellow-700 bg-yellow-100"
-    if (score >= 60) return "text-orange-700 bg-orange-100"
-    return "text-red-700 bg-red-100"
-  }
 
   const nextStep = () => {
     if (currentStep < totalSteps - 1) {
@@ -122,7 +142,7 @@ function InterviewWizard({
               <p className="text-sm text-gray-600">Minutes</p>
             </div>
             <div className="text-center">
-              <div className={`text-2xl font-bold ${getScoreColor(interview.overall_score)}`}>
+              <div className="text-2xl font-bold text-gray-900">
                 {interview.overall_score ? `${interview.overall_score}%` : "N/A"}
               </div>
               <p className="text-sm text-gray-600">Overall Score</p>
@@ -155,12 +175,13 @@ function InterviewWizard({
               <button
                 key={index}
                 onClick={() => setCurrentStep(index)}
-                className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${index === currentStep
+                className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                  index === currentStep
                     ? "bg-purple-600 text-white"
                     : index < currentStep
                       ? "bg-green-100 text-green-700"
                       : "bg-gray-100 text-gray-500"
-                  }`}
+                }`}
               >
                 {index + 1}
               </button>
@@ -181,7 +202,7 @@ function InterviewWizard({
                 <CardHeader className="bg-purple-50">
                   <CardTitle className="text-lg flex items-center justify-between">
                     <span>Question {currentStep + 1}</span>
-                    <Badge className={`${getScoreColor(currentQuestion.score)}`}>
+                    <Badge className="bg-gray-100 text-gray-700">
                       {currentQuestion.score ? `${currentQuestion.score}%` : "N/A"}
                     </Badge>
                   </CardTitle>
@@ -279,6 +300,7 @@ export default function CandidateProfilePage() {
   const [scheduleCallDialogOpen, setScheduleCallDialogOpen] = useState(false)
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null)
   const [jobNames, setJobNames] = useState<Record<string, string>>({})
+
   useEffect(() => {
     const fetchCandidate = async () => {
       try {
@@ -301,12 +323,10 @@ export default function CandidateProfilePage() {
 
                 // Fetch job name
                 const jobName = await getJobName(application.job_id)
+                console.log(jobName)
                 jobNamesMap[application.job_id] = jobName.job_name || `Job ${application.job_id}`
               } catch (error) {
-                console.error(
-                  `Failed to fetch data for candidate ${candidateId} and job ${application.job_id}:`,
-                  error,
-                )
+                console.error(`Failed to fetch data for candidate ${candidateId} and job ${application.job_id}:`, error)
                 callsMap[application.job_id] = []
                 jobNamesMap[application.job_id] = `Job ${application.job_id}` // Fallback
               }
@@ -333,7 +353,7 @@ export default function CandidateProfilePage() {
       fetchCandidate()
     }
   }, [candidateId, toast])
-  console.log(jobNames)
+
   const handleDownloadResume = async () => {
     try {
       const blob = await downloadResume(candidateId)
@@ -376,6 +396,7 @@ export default function CandidateProfilePage() {
   const handleViewCallAnalysis = async (callId: string) => {
     try {
       const callDetails = await getCallDetails(callId)
+      console.log(callDetails)
       setSelectedCallData(callDetails)
       setCallAnalysisOpen(true)
     } catch (error) {
@@ -435,15 +456,6 @@ export default function CandidateProfilePage() {
       default:
         return "text-gray-700 bg-gray-100 border-gray-200"
     }
-  }
-
-  const getScoreColor = (score: number | null | undefined) => {
-    if (typeof score !== "number") return "text-gray-700 bg-gray-100"
-    if (score >= 90) return "text-green-700 bg-green-100"
-    if (score >= 80) return "text-blue-700 bg-blue-100"
-    if (score >= 70) return "text-yellow-700 bg-yellow-100"
-    if (score >= 60) return "text-orange-700 bg-orange-100"
-    return "text-red-700 bg-red-100"
   }
 
   const tabs = [
@@ -570,10 +582,6 @@ export default function CandidateProfilePage() {
                       <Briefcase className="w-3 h-3 mr-1" />
                       {candidate.resume_analysis.experience_years} years experience
                     </Badge>
-                    <Badge className={`px-3 py-1 border ${getScoreColor(candidate.resume_analysis.matching_score)}`}>
-                      <Star className="w-3 h-3 mr-1" />
-                      Score: {candidate.resume_analysis.matching_score}%
-                    </Badge>
                   </div>
                 </div>
 
@@ -598,7 +606,7 @@ export default function CandidateProfilePage() {
                   {candidate.created_at && (
                     <div className="flex items-center gap-2 text-gray-600">
                       <Calendar className="h-4 w-4 text-purple-600" />
-                      <span className="text-sm">Added: {new Date(candidate.created_at).toLocaleDateString()}</span>
+                      <span className="text-sm">Added: {formatDateOnly(candidate.created_at)}</span>
                     </div>
                   )}
                 </div>
@@ -624,8 +632,8 @@ export default function CandidateProfilePage() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mb-4">
                 <TrendingUp className="h-6 w-6 text-green-600" />
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">{candidate.resume_analysis.matching_score}%</div>
-              <p className="text-sm text-gray-600">Match Score</p>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{candidate.resume_analysis.experience_years}</div>
+              <p className="text-sm text-gray-600">Years Experience</p>
             </CardContent>
           </Card>
 
@@ -634,8 +642,8 @@ export default function CandidateProfilePage() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 mb-4">
                 <BarChart3 className="h-6 w-6 text-purple-600" />
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">{candidate.resume_analysis.experience_years}</div>
-              <p className="text-sm text-gray-600">Years Experience</p>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{candidate.resume_analysis.skills.length}</div>
+              <p className="text-sm text-gray-600">Skills</p>
             </CardContent>
           </Card>
 
@@ -644,8 +652,10 @@ export default function CandidateProfilePage() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-100 mb-4">
                 <Brain className="h-6 w-6 text-yellow-600" />
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">{candidate.resume_analysis.skills.length}</div>
-              <p className="text-sm text-gray-600">Skills</p>
+              <div className="text-3xl font-bold text-gray-900 mb-1">
+                {candidate.resume_analysis.analysis_summary ? "Complete" : "Pending"}
+              </div>
+              <p className="text-sm text-gray-600">Analysis Status</p>
             </CardContent>
           </Card>
         </div>
@@ -657,10 +667,11 @@ export default function CandidateProfilePage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.id
                     ? "border-gray-800 text-gray-900"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
+                }`}
               >
                 {tab.label}
               </button>
@@ -755,7 +766,7 @@ export default function CandidateProfilePage() {
                       {candidate.created_at && (
                         <div>
                           <p className="text-sm text-gray-500 mb-1">Created At</p>
-                          <p className="font-light">{new Date(candidate.created_at).toLocaleString()}</p>
+                          <p className="font-light">{formatDateInUserTimezone(candidate.created_at)}</p>
                         </div>
                       )}
                       <div>
@@ -837,13 +848,7 @@ export default function CandidateProfilePage() {
                           <div className="space-y-4">
                             <div>
                               <p className="text-sm text-gray-500 mb-1">Application Date</p>
-                              <p className="font-medium">{new Date(application.application_date).toLocaleString()}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500 mb-1">Matching Score</p>
-                              <Badge className={`${getScoreColor(application.matching_score)}`}>
-                                {application.matching_score}%
-                              </Badge>
+                              <p className="font-medium">{formatDateInUserTimezone(application.application_date)}</p>
                             </div>
                           </div>
                           <div className="space-y-4">
@@ -890,14 +895,15 @@ export default function CandidateProfilePage() {
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center gap-3">
                                         <div
-                                          className={`w-2 h-2 rounded-full ${call.call_status === "completed"
+                                          className={`w-2 h-2 rounded-full ${
+                                            call.call_status === "completed"
                                               ? "bg-green-500"
                                               : call.call_status === "scheduled"
                                                 ? "bg-blue-500"
                                                 : call.call_status === "in_progress"
                                                   ? "bg-yellow-500"
                                                   : "bg-red-500"
-                                            }`}
+                                          }`}
                                         />
                                         <div>
                                           <div className="flex items-center gap-2">
@@ -916,7 +922,7 @@ export default function CandidateProfilePage() {
                                       </div>
 
                                       {call.candidate_score && (
-                                        <Badge className={`${getScoreColor(call.candidate_score)} font-semibold`}>
+                                        <Badge className="bg-gray-100 text-gray-700 font-semibold">
                                           {call.candidate_score}%
                                         </Badge>
                                       )}
@@ -926,18 +932,11 @@ export default function CandidateProfilePage() {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                       <div className="space-y-1">
                                         <p className="text-gray-500 font-medium">Scheduled</p>
-                                        <p className="text-gray-900">
-                                          {new Date(call.scheduled_time).toLocaleDateString()}
-                                        </p>
-                                        <p className="text-gray-600 text-xs">
-                                          {new Date(call.scheduled_time).toLocaleTimeString([], {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })}
-                                        </p>
+                                        <p className="text-gray-900">{formatDateOnly(call.scheduled_time)}</p>
+                                        <p className="text-gray-600 text-xs">{formatTimeOnly(call.scheduled_time)}</p>
                                       </div>
 
-                                      {call.call_duration && (
+                                      {call.call_duration > 0 && (
                                         <div className="space-y-1">
                                           <p className="text-gray-500 font-medium">Duration</p>
                                           <p className="text-gray-900">
@@ -1017,7 +1016,7 @@ export default function CandidateProfilePage() {
                                   Legacy Interview Data
                                 </CardTitle>
                                 {application.call_qa.overall_score && (
-                                  <Badge className={`${getScoreColor(application.call_qa.overall_score)}`}>
+                                  <Badge className="bg-gray-100 text-gray-700">
                                     Score: {application.call_qa.overall_score}%
                                   </Badge>
                                 )}
@@ -1029,7 +1028,7 @@ export default function CandidateProfilePage() {
                                   <div>
                                     <p className="text-sm text-purple-600 mb-1">Interview Date</p>
                                     <p className="font-medium text-purple-800">
-                                      {new Date(application.call_qa.call_date).toLocaleDateString()}
+                                      {formatDateOnly(application.call_qa.call_date)}
                                     </p>
                                   </div>
                                 )}

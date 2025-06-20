@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Filter, MapPin, Plus, Search, Users, Eye, Calendar, DollarSign, Briefcase } from "lucide-react"
+import { Filter, MapPin, Plus, Search, Calendar, Briefcase, Globe } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +38,7 @@ export default function JobsPage() {
     job_type: "all",
     experience_level: "all",
     remote_allowed: "all",
+    language: "all",
   })
 
   // Calculate active filters count
@@ -58,6 +59,7 @@ export default function JobsPage() {
       job_type: "all",
       experience_level: "all",
       remote_allowed: "all",
+      language: "all",
     })
   }
 
@@ -111,7 +113,12 @@ export default function JobsPage() {
       (filters.remote_allowed === "true" && job.remote_allowed) ||
       (filters.remote_allowed === "false" && !job.remote_allowed)
 
-    return matchesSearch && matchesStatus && matchesJobType && matchesExperienceLevel && matchesRemote
+    // Language filter
+    const matchesLanguage = filters.language === "all" || job.language === filters.language
+
+    return (
+      matchesSearch && matchesStatus && matchesJobType && matchesExperienceLevel && matchesRemote && matchesLanguage
+    )
   })
 
   const getStatusColor = (status: string) => {
@@ -298,6 +305,30 @@ export default function JobsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language-filter">Language</Label>
+                  <Select value={filters.language} onValueChange={(value) => handleFilterChange("language", value)}>
+                    <SelectTrigger id="language-filter">
+                      <SelectValue placeholder="All Languages" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Languages</SelectItem>
+                      <SelectItem value="english">English</SelectItem>
+                      <SelectItem value="spanish">Spanish</SelectItem>
+                      <SelectItem value="french">French</SelectItem>
+                      <SelectItem value="german">German</SelectItem>
+                      <SelectItem value="italian">Italian</SelectItem>
+                      <SelectItem value="portuguese">Portuguese</SelectItem>
+                      <SelectItem value="chinese">Chinese</SelectItem>
+                      <SelectItem value="japanese">Japanese</SelectItem>
+                      <SelectItem value="korean">Korean</SelectItem>
+                      <SelectItem value="arabic">Arabic</SelectItem>
+                      <SelectItem value="hindi">Hindi</SelectItem>
+                      <SelectItem value="russian">Russian</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <DropdownMenuSeparator />
               <div className="p-2 flex justify-between">
@@ -351,7 +382,7 @@ export default function JobsPage() {
         >
           {filteredJobs.map((job) => (
             <motion.div key={job.id} variants={item}>
-              <Card 
+              <Card
                 className="h-full overflow-hidden border-border/60 hover:border-primary/50 hover:shadow-md transition-all duration-300 cursor-pointer hover:scale-[1.02]"
                 onClick={() => handleJobClick(job.id)}
               >
@@ -388,16 +419,21 @@ export default function JobsPage() {
                     )}
                   </div>
 
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Globe className="mr-1 h-4 w-4" />
+                    {job.language.charAt(0).toUpperCase() + job.language.slice(1)}
+                  </div>
+
                   {/* <div className="flex items-center text-sm text-muted-foreground">
                     <DollarSign className="mr-1 h-4 w-4" />
                     {formatSalary(job.salary_range)}
                   </div> */}
 
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center">
+                    {/* <div className="flex items-center">
                       <Users className="mr-1 h-4 w-4" />
                       {job.application_count} applications
-                    </div>
+                    </div> */}
                     {/* <div className="flex items-center">
                       <Eye className="mr-1 h-4 w-4" />
                       {job.view_count} views
@@ -426,47 +462,54 @@ export default function JobsPage() {
                 <TableHead className="min-w-[100px]">Status</TableHead>
                 <TableHead className="min-w-[120px]">Location</TableHead>
                 <TableHead className="min-w-[100px]">Type</TableHead>
-                <TableHead className="min-w-[100px]">Experience</TableHead>
-                <TableHead className="min-w-[100px]">Applications</TableHead>
+                <TableHead className="min-w-[100px]">Language</TableHead>
+                {/* <TableHead className="min-w-[100px]">Experience</TableHead> */}
+                {/* <TableHead className="min-w-[100px]">Applications</TableHead> */}
                 {/* <TableHead className="min-w-[100px]">Views</TableHead> */}
                 <TableHead className="min-w-[100px]">Posted</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredJobs.map((job) => (
-                <TableRow 
-                  key={job.id} 
-                  className="hover:bg-muted/30 transition-colors duration-200 cursor-pointer"
-                  onClick={() => handleJobClick(job.id)}
-                >
-                  <TableCell className="font-medium">{job.title}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={getStatusColor(job.status)}
-                      className="transition-colors duration-200 hover:bg-primary/20"
+              {filteredJobs.map(
+                (job) => (
+                  console.log(job.experience_level),
+                  (
+                    <TableRow
+                      key={job.id}
+                      className="hover:bg-muted/30 transition-colors duration-200 cursor-pointer"
+                      onClick={() => handleJobClick(job.id)}
                     >
-                      {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {job.location}
-                    {job.remote_allowed && (
-                      <Badge variant="outline" className="ml-1 text-xs">
-                        Remote
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{getJobTypeLabel(job.job_type)}</TableCell>
-                  <TableCell>
+                      <TableCell className="font-medium">{job.title}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={getStatusColor(job.status)}
+                          className="transition-colors duration-200 hover:bg-primary/20"
+                        >
+                          {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {job.location}
+                        {job.remote_allowed && (
+                          <Badge variant="outline" className="ml-1 text-xs">
+                            Remote
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{getJobTypeLabel(job.job_type)}</TableCell>
+                      <TableCell>{job.language?.charAt(0).toUpperCase() + job.language?.slice(1)}</TableCell>
+                      {/* <TableCell>
                     {job.experience_level
                       ? job.experience_level.charAt(0).toUpperCase() + job.experience_level.slice(1)
                       : "-"}
-                  </TableCell>
-                  <TableCell>{job.application_count}</TableCell>
-                  {/* <TableCell>{job.view_count}</TableCell> */}
-                  <TableCell>{formatDate(job.created_at)}</TableCell>
-                </TableRow>
-              ))}
+                  </TableCell> */}
+                      {/* <TableCell>{job.application_count}</TableCell> */}
+                      {/* <TableCell>{job.view_count}</TableCell> */}
+                      <TableCell>{formatDate(job.created_at)}</TableCell>
+                    </TableRow>
+                  )
+                ),
+              )}
             </TableBody>
           </Table>
         </div>
