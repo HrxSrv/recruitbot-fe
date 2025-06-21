@@ -44,6 +44,8 @@ import { getCallDetails, getCallsByCandidateAndJob, type CallDetailsResponse, ty
 import { JobAssociationDialog } from "@/components/candidates/job-association-dialog"
 import { ScheduleCallDialog } from "@/components/candidates/schedule-call-dialog"
 import { CallAnalysisDialog } from "@/components/candidates/call-analysis-dialog"
+import { CandidateScoresDialog } from "@/components/candidates/candidate-scores-dialog"
+import { getCandidateScores } from "@/lib/api/calls"
 
 // Utility function to format dates in user's timezone
 const formatDateInUserTimezone = (dateString: string | Date) => {
@@ -143,7 +145,7 @@ function InterviewWizard({
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
-                {interview.overall_score ? `${interview.overall_score}%` : "N/A"}
+                {interview.overall_score ? `${interview.overall_score}` : "N/A"}
               </div>
               <p className="text-sm text-gray-600">Overall Score</p>
             </div>
@@ -300,6 +302,8 @@ export default function CandidateProfilePage() {
   const [scheduleCallDialogOpen, setScheduleCallDialogOpen] = useState(false)
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null)
   const [jobNames, setJobNames] = useState<Record<string, string>>({})
+  const [scoresDialogOpen, setScoresDialogOpen] = useState(false)
+  const [candidateOverallScore, setCandidateOverallScore] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchCandidate = async () => {
@@ -336,6 +340,9 @@ export default function CandidateProfilePage() {
 
         setCallsData(callsMap)
         setJobNames(jobNamesMap)
+
+        // Fetch candidate overall score
+        fetchCandidateScore()
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch candidate"
         setError(errorMessage)
@@ -456,6 +463,32 @@ export default function CandidateProfilePage() {
       default:
         return "text-gray-700 bg-gray-100 border-gray-200"
     }
+  }
+
+  const fetchCandidateScore = async () => {
+    try {
+      const scoresData = await getCandidateScores(candidateId)
+      setCandidateOverallScore(scoresData.scores.overall_score?.average || null)
+    } catch (error) {
+      console.error("Failed to fetch candidate scores:", error)
+      setCandidateOverallScore(null)
+    }
+  }
+
+  const getScoreColor = (score: number | null) => {
+    if (!score) return "text-gray-600"
+    if (score >= 80) return "text-emerald-600"
+    if (score >= 60) return "text-blue-600"
+    if (score >= 40) return "text-amber-600"
+    return "text-red-600"
+  }
+
+  const getScoreBgColor = (score: number | null) => {
+    if (!score) return "bg-gray-100"
+    if (score >= 80) return "bg-emerald-100"
+    if (score >= 60) return "bg-blue-100"
+    if (score >= 40) return "bg-amber-100"
+    return "bg-red-100"
   }
 
   const tabs = [
@@ -647,15 +680,20 @@ export default function CandidateProfilePage() {
             </CardContent>
           </Card>
 
-          <Card className="border shadow-sm rounded-lg">
+          <Card
+            className="border shadow-sm rounded-lg cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-105"
+            onClick={() => setScoresDialogOpen(true)}
+          >
             <CardContent className="p-6 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-100 mb-4">
-                <Brain className="h-6 w-6 text-yellow-600" />
+              <div
+                className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 ${getScoreBgColor(candidateOverallScore)}`}
+              >
+                <BarChart3 className={`h-6 w-6 ${getScoreColor(candidateOverallScore)}`} />
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {candidate.resume_analysis.analysis_summary ? "Complete" : "Pending"}
+              <div className={`text-3xl font-bold mb-1 ${getScoreColor(candidateOverallScore)}`}>
+                {candidateOverallScore ? `${candidateOverallScore.toFixed(0)}` : "N/A"}
               </div>
-              <p className="text-sm text-gray-600">Analysis Status</p>
+              <p className="text-sm text-gray-600">Match Score</p>
             </CardContent>
           </Card>
         </div>
@@ -1153,6 +1191,14 @@ export default function CandidateProfilePage() {
 
         {/* Call Analysis Dialog */}
         <CallAnalysisDialog open={callAnalysisOpen} onOpenChange={setCallAnalysisOpen} callData={selectedCallData} />
+
+        {/* Candidate Scores Dialog */}
+        <CandidateScoresDialog
+          open={scoresDialogOpen}
+          onOpenChange={setScoresDialogOpen}
+          candidateId={candidateId}
+          candidateName={candidate.personal_info.name}
+        />
       </motion.div>
     </div>
   )

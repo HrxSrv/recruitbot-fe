@@ -1,9 +1,11 @@
 "use client"
 
+import React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
-import { User, Loader2, ArrowRight } from "lucide-react"
+import { User, Loader2, ArrowRight, BarChart3, ArrowUpDown } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -12,17 +14,28 @@ import { Card, CardContent } from "@/components/ui/card"
 import { listCandidates, type Candidate } from "@/lib/api/candidates"
 import { type Job, getJobs } from "@/lib/api/jobs"
 import { ResumeAnalysisButton } from "@/components/candidates/resume-analysis-button"
+import { CandidateScoresDialog } from "@/components/candidates/candidate-scores-dialog"
+
+type SortOption = "name_asc" | "name_desc" | "score_desc" | "score_asc" | "recent" | "experience_desc"
+type ScoreRange = "all" | "excellent" | "good" | "average" | "below_average" | "not_evaluated"
 
 export default function CandidatesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedJobFilter, setSelectedJobFilter] = useState<string>("")
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>("")
+  const [sortBy, setSortBy] = useState<SortOption>("recent")
+  const [scoreRange, setScoreRange] = useState<ScoreRange>("all")
   const [candidates, setCandidates] = useState<Candidate[]>([])
-  const [jobs, setJobs] = useState<Job[]>([]) // Add jobs state
+  const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
-  const [jobsLoading, setJobsLoading] = useState(true) // Add jobs loading state
+  const [jobsLoading, setJobsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [jobsError, setJobsError] = useState<string | null>(null) // Add jobs error state
+  const [jobsError, setJobsError] = useState<string | null>(null)
+  const [scoresDialogOpen, setScoresDialogOpen] = useState(false)
+  const [selectedCandidateForScores, setSelectedCandidateForScores] = useState<{
+    id: string
+    name: string
+  } | null>(null)
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
@@ -42,6 +55,26 @@ export default function CandidatesPage() {
     { value: "interview", label: "Interview" },
     { value: "rejected", label: "Rejected" },
     { value: "hired", label: "Hired" },
+  ]
+
+  // Sort options
+  const sortOptions = [
+    { value: "recent", label: "Most Recent" },
+    { value: "score_desc", label: "Highest Score" },
+    { value: "score_asc", label: "Lowest Score" },
+    { value: "name_asc", label: "Name A-Z" },
+    { value: "name_desc", label: "Name Z-A" },
+    { value: "experience_desc", label: "Most Experience" },
+  ]
+
+  // Score range options
+  const scoreRangeOptions = [
+    { value: "all", label: "All Scores" },
+    { value: "excellent", label: "Excellent (80-100)" },
+    { value: "good", label: "Good (60-79)" },
+    { value: "average", label: "Average (40-59)" },
+    { value: "below_average", label: "Below Average (0-39)" },
+    { value: "not_evaluated", label: "Not Evaluated" },
   ]
 
   useEffect(() => {
@@ -80,7 +113,6 @@ export default function CandidatesPage() {
       const response = await listCandidates({
         skip: (pagination.page - 1) * pagination.per_page,
         limit: pagination.per_page,
-        // status_filter: selectedStatusFilter === "all_statuses" ? undefined : selectedStatusFilter || undefined,
         job_id_filter: activeJobFilter === "all_jobs" ? undefined : activeJobFilter,
       })
 
@@ -113,22 +145,71 @@ export default function CandidatesPage() {
     fetchCandidates()
   }, [selectedJobFilter, selectedStatusFilter, pagination.page])
 
-  const filteredCandidates = candidates.filter((candidate) => {
-    const matchesSearch =
-      candidate.personal_info.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      candidate.personal_info.email.toLowerCase().includes(searchQuery.toLowerCase())
+  // Sort and filter candidates
+  const processedCandidates = React.useMemo(() => {
+    const filtered = candidates.filter((candidate) => {
+      const matchesSearch =
+        candidate.personal_info.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        candidate.personal_info.email.toLowerCase().includes(searchQuery.toLowerCase())
 
-    // Status filtering: check if candidate has at least one application with the selected status
-    const matchesStatus =
-      !selectedStatusFilter ||
-      selectedStatusFilter === "all_statuses" ||
-      candidate.applications.some((app) => app.status === selectedStatusFilter)
+      // Status filtering
+      const matchesStatus =
+        !selectedStatusFilter ||
+        selectedStatusFilter === "all_statuses" ||
+        candidate.applications.some((app) => app.status === selectedStatusFilter)
 
-    return matchesSearch && matchesStatus
-  })
+      // Score range filtering
+      const matchesScoreRange = (() => {
+        const score = candidate.overall_score
+        switch (scoreRange) {
+          case "excellent":
+            return score !== null && score !== undefined && score >= 80
+          case "good":
+            return score !== null && score !== undefined && score >= 60 && score < 80
+          case "average":
+            return score !== null && score !== undefined && score >= 40 && score < 60
+          case "below_average":
+            return score !== null && score !== undefined && score < 40
+          case "not_evaluated":
+            return score === null || score === undefined
+          default:
+            return true
+        }
+      })()
+
+      return matchesSearch && matchesStatus && matchesScoreRange
+    })
+
+    // Sort candidates
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "score_desc":
+          return (b.overall_score || 0) - (a.overall_score || 0)
+        case "score_asc":
+          return (a.overall_score || 0) - (b.overall_score || 0)
+        case "name_asc":
+          return a.personal_info.name.localeCompare(b.personal_info.name)
+        case "name_desc":
+          return b.personal_info.name.localeCompare(a.personal_info.name)
+        case "experience_desc":
+          return b.resume_analysis.experience_years - a.resume_analysis.experience_years
+        case "recent":
+        default:
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      }
+    })
+
+    return filtered
+  }, [candidates, searchQuery, selectedStatusFilter, scoreRange, sortBy])
 
   const handleViewProfile = (candidateId: string) => {
     router.push(`/dashboard/candidates/${candidateId}`)
+  }
+
+  const handleViewScores = (candidateId: string, candidateName: string, event: React.MouseEvent) => {
+    event.stopPropagation()
+    setSelectedCandidateForScores({ id: candidateId, name: candidateName })
+    setScoresDialogOpen(true)
   }
 
   // Helper function to get job title by ID
@@ -165,6 +246,19 @@ export default function CandidatesPage() {
       default:
         return "bg-gray-100 text-gray-800"
     }
+  }
+
+  const getScoreColor = (score: number | null | undefined) => {
+    if (score === null || score === undefined) return "text-gray-500 bg-gray-50"
+    if (score >= 80) return "text-emerald-700 bg-emerald-50"
+    if (score >= 60) return "text-blue-700 bg-blue-50"
+    if (score >= 40) return "text-amber-700 bg-amber-50"
+    return "text-red-700 bg-red-50"
+  }
+
+  const formatScore = (score: number | null | undefined) => {
+    if (score === null || score === undefined) return "N/A"
+    return Math.round(score).toString()
   }
 
   const handleUploadComplete = () => {
@@ -228,8 +322,6 @@ export default function CandidatesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Candidates</h1>
           <p className="text-muted-foreground">View and manage all candidates in your recruitment pipeline</p>
         </div>
-
-        {/* <UploadResumeButton onUploadComplete={handleUploadComplete} /> */}
       </div>
 
       <div className="flex flex-col space-y-4">
@@ -290,11 +382,40 @@ export default function CandidatesPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            <Select value={scoreRange} onValueChange={(value: ScoreRange) => setScoreRange(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Score range" />
+              </SelectTrigger>
+              <SelectContent>
+                {scoreRangeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      {option.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         <div className="grid gap-4">
-          {filteredCandidates.map((candidate) => (
+          {processedCandidates.map((candidate) => (
             <Card
               key={candidate.id}
               className="group relative border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden bg-white"
@@ -349,11 +470,26 @@ export default function CandidatesPage() {
                     </div>
                   </div>
 
-                  {/* Center Section - Experience */}
+                  {/* Center Section - Overall Score */}
                   <div className="flex-1 flex justify-center items-center px-6 border-x border-slate-100">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-slate-700">{candidate.resume_analysis.experience_years}</p>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Years Exp</p>
+                      <button
+                        className={`group/score relative px-4 py-3 rounded-lg transition-all duration-200 hover:shadow-sm border ${getScoreColor(
+                          candidate.overall_score,
+                        )} hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2`}
+                        onClick={(e) => handleViewScores(candidate.id, candidate.personal_info.name, e)}
+                      >
+                        <div className="flex flex-col items-center gap-1.5">
+                          {/* <BarChart3 className="h-4 w-4 opacity-60 group-hover/score:opacity-80 transition-opacity" /> */}
+                          <div className="text-2xl font-bold leading-none">
+                            {formatScore(candidate.overall_score)}
+                            {candidate.overall_score !== null && candidate.overall_score !== undefined && (
+                              <span className="text-sm font-normal opacity-70"></span>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium uppercase tracking-wider opacity-70">Overall Score</p>
+                        </div>
+                      </button>
                     </div>
                   </div>
 
@@ -389,7 +525,7 @@ export default function CandidatesPage() {
           ))}
 
           {/* Empty State */}
-          {filteredCandidates.length === 0 && !loading && (
+          {processedCandidates.length === 0 && !loading && (
             <Card className="border border-slate-200 shadow-sm">
               <CardContent className="text-center py-16">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
@@ -432,6 +568,14 @@ export default function CandidatesPage() {
           </div>
         )}
       </div>
+
+      {/* Candidate Scores Dialog */}
+      <CandidateScoresDialog
+        open={scoresDialogOpen}
+        onOpenChange={setScoresDialogOpen}
+        candidateId={selectedCandidateForScores?.id || ""}
+        candidateName={selectedCandidateForScores?.name || ""}
+      />
     </div>
   )
 }

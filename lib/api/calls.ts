@@ -29,6 +29,46 @@ export interface QuickScheduleRequest {
   scheduled_time?: string
 }
 
+export interface CandidateScoresResponse {
+  status: string
+  candidate: {
+    id: string
+    name: string
+    email: string
+  }
+  scores: {
+    overall_score: {
+      average: number
+      latest: number
+      count: number
+    } | null
+    communication_score: {
+      average: number
+      latest: number
+      count: number
+    } | null
+    technical_score: {
+      average: number
+      latest: number
+      count: number
+    } | null
+    cultural_fit_score: {
+      average: number
+      latest: number
+      count: number
+    } | null
+  }
+  summary: {
+    total_calls_analyzed: number
+    latest_call_date: string | null
+    score_trend: {
+      improving: boolean
+      consistent: boolean | null
+    }
+  }
+  message?: string
+}
+
 export interface CallDetails {
   call_id: string
   scheduled_time: string
@@ -495,6 +535,29 @@ export async function quickScheduleCalls(
     }
 
     throw new CallsError(error.detail || "Failed to schedule calls")
+  }
+
+  return response.json()
+}
+
+export async function getCandidateScores(candidateId: string): Promise<CandidateScoresResponse> {
+  const response = await fetchWithAutoRefresh(`${baseUrl}/calls/candidate/${candidateId}/scores`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new CallsError("Candidate not found")
+    }
+    if (response.status === 403) {
+      throw new CallsError("Access denied")
+    }
+    const error = await response.json().catch(() => ({}))
+    throw new CallsError(error.detail || "Failed to fetch candidate scores")
   }
 
   return response.json()

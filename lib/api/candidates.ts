@@ -49,6 +49,7 @@ export interface Candidate {
   total_applications: number
   status: "active" | "hired" | "inactive"
   created_at?: string
+  overall_score?: number | null // Add this field from backend
 }
 
 export interface CandidateListResponse {
@@ -97,7 +98,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8
 // Get auth token from localStorage with SSR safety
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null // SSR check
-  
+
   try {
     const token = localStorage.getItem("auth_token")
     return token
@@ -110,7 +111,7 @@ function getAuthToken(): string | null {
 // Check if token is expired
 function isTokenExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const payload = JSON.parse(atob(token.split(".")[1]))
     const currentTime = Math.floor(Date.now() / 1000)
     return payload.exp < currentTime
   } catch (error) {
@@ -131,7 +132,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 1
   console.log("=== Candidates API Request Debug ===")
   console.log("URL:", url)
   console.log("Auth token found:", !!authToken)
-  
+
   if (authToken) {
     console.log("Auth token value:", `${authToken.substring(0, 10)}...`)
     console.log("Token expired:", isTokenExpired(authToken))
@@ -177,7 +178,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 1
 // Refresh token function
 async function refreshTokenIfNeeded(): Promise<boolean> {
   const refreshToken = localStorage.getItem("refresh_token")
-  
+
   if (!refreshToken) {
     console.log("No refresh token available")
     return false
@@ -213,7 +214,7 @@ async function refreshTokenIfNeeded(): Promise<boolean> {
 // Enhanced fetch with automatic token refresh
 async function fetchWithAutoRefresh(url: string, options: RequestInit = {}, timeout = 10000) {
   let response = await fetchWithAuth(url, options, timeout)
-  
+
   // If unauthorized and we have a refresh token, try to refresh
   if (response.status === 401) {
     const refreshed = await refreshTokenIfNeeded()
@@ -222,7 +223,7 @@ async function fetchWithAutoRefresh(url: string, options: RequestInit = {}, time
       response = await fetchWithAuth(url, options, timeout)
     }
   }
-  
+
   return response
 }
 
@@ -286,9 +287,9 @@ export async function getCandidate(candidateId: string): Promise<Candidate> {
 }
 
 export async function updateCandidateStatus(
-  candidateId: string, 
-  newStatus: string, 
-  notes?: string
+  candidateId: string,
+  newStatus: string,
+  notes?: string,
 ): Promise<StatusUpdateResponse> {
   try {
     const body = new URLSearchParams()
@@ -371,9 +372,7 @@ export async function downloadResume(candidateId: string): Promise<Blob> {
     }
 
     // Use the enhanced fetch for file download
-    const response = await fetchWithAutoRefresh(
-      `${API_BASE_URL}/files/download?path=${encodeURIComponent(filePath)}`
-    )
+    const response = await fetchWithAutoRefresh(`${API_BASE_URL}/files/download?path=${encodeURIComponent(filePath)}`)
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -412,7 +411,7 @@ export async function associateCandidateWithJob(candidateId: string, jobId: stri
 // Upload Functions
 export async function uploadResumeGeneral(
   resumeFile: File,
-  candidateData?: CandidateUploadData
+  candidateData?: CandidateUploadData,
 ): Promise<UploadResponse> {
   try {
     const formData = new FormData()
@@ -456,7 +455,7 @@ export async function uploadResumeGeneral(
 export async function uploadResumeForJob(
   jobId: string,
   resumeFile: File,
-  candidateData?: CandidateUploadData
+  candidateData?: CandidateUploadData,
 ): Promise<UploadResponse> {
   try {
     const formData = new FormData()
