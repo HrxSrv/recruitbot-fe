@@ -41,6 +41,8 @@ export default function JobsPage() {
     language: "all",
   })
 
+  const [sortBy, setSortBy] = useState("newest")
+
   // Calculate active filters count
   const activeFilters = Object.values(filters).filter((value) => value !== "all").length
 
@@ -119,6 +121,26 @@ export default function JobsPage() {
     return (
       matchesSearch && matchesStatus && matchesJobType && matchesExperienceLevel && matchesRemote && matchesLanguage
     )
+  })
+
+  const sortedJobs = filteredJobs.sort((a, b) => {
+    switch (sortBy) {
+      case "newest":
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      case "oldest":
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      case "title_asc":
+        return a.title.localeCompare(b.title)
+      case "title_desc":
+        return b.title.localeCompare(a.title)
+      case "status":
+        const statusOrder = { active: 0, draft: 1, paused: 2, closed: 3 }
+        return statusOrder[a.status] - statusOrder[b.status]
+      case "applications":
+        return (b.application_count || 0) - (a.application_count || 0)
+      default:
+        return 0
+    }
   })
 
   const getStatusColor = (status: string) => {
@@ -342,6 +364,20 @@ export default function JobsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px] border-border/50 hover:border-primary/50 transition-colors duration-200">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest First</SelectItem>
+              <SelectItem value="oldest">Oldest First</SelectItem>
+              <SelectItem value="title_asc">Title A-Z</SelectItem>
+              <SelectItem value="title_desc">Title Z-A</SelectItem>
+              <SelectItem value="status">Status</SelectItem>
+              <SelectItem value="applications">Most Applications</SelectItem>
+            </SelectContent>
+          </Select>
+
           <div className="flex items-center rounded-md border border-border/50 hover:border-primary/50 transition-colors duration-200">
             <Button
               variant={view === "table" ? "secondary" : "ghost"}
@@ -380,7 +416,7 @@ export default function JobsPage() {
           initial="hidden"
           animate="show"
         >
-          {filteredJobs.map((job) => (
+          {sortedJobs.map((job) => (
             <motion.div key={job.id} variants={item}>
               <Card
                 className="h-full overflow-hidden border-border/60 hover:border-primary/50 hover:shadow-md transition-all duration-300 cursor-pointer hover:scale-[1.02]"
@@ -470,7 +506,7 @@ export default function JobsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredJobs.map(
+              {sortedJobs.map(
                 (job) => (
                   console.log(job.experience_level),
                   (
@@ -497,7 +533,7 @@ export default function JobsPage() {
                         )}
                       </TableCell>
                       <TableCell>{getJobTypeLabel(job.job_type)}</TableCell>
-                      <TableCell>{job.language?.charAt(0).toUpperCase() + job.language?.slice(1)}</TableCell>
+                      <TableCell>{job.language.charAt(0).toUpperCase() + job.language.slice(1)}</TableCell>
                       {/* <TableCell>
                     {job.experience_level
                       ? job.experience_level.charAt(0).toUpperCase() + job.experience_level.slice(1)

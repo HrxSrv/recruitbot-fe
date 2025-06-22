@@ -372,7 +372,7 @@ export async function downloadResume(candidateId: string): Promise<Blob> {
     }
 
     // Use the enhanced fetch for file download
-    const response = await fetchWithAutoRefresh(`${API_BASE_URL}/files/download?path=${encodeURIComponent(filePath)}`)
+    const response = await fetchWithAutoRefresh(`${API_BASE_URL}/candidates/files/download?path=${encodeURIComponent(filePath)}`)
 
     if (!response.ok) {
       if (response.status === 401) {

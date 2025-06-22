@@ -131,12 +131,12 @@ export function CandidateScoresDialog({ open, onOpenChange, candidateId, candida
             </div>
           ) : scores ? (
             <div className="space-y-4">
-              {/* Summary Stats */}
+              {/* Summary? Stats */}
               <Card className="bg-muted/30">
                 <CardContent className="p-4">
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
-                      <div className="text-2xl font-bold text-foreground">{scores.summary.total_calls_analyzed}</div>
+                      <div className="text-2xl font-bold text-foreground">{scores.summary?.total_calls_analyzed}</div>
                       <p className="text-xs text-muted-foreground">Interviews</p>
                     </div>
                     <div>
@@ -144,19 +144,19 @@ export function CandidateScoresDialog({ open, onOpenChange, candidateId, candida
                         <span className="text-2xl font-bold text-foreground">
                           {scores.scores.overall_score?.average?.toFixed(0) || "N/A"}
                         </span>
-                        {scores.summary.score_trend &&
-                          getTrendIcon(scores.summary.score_trend.improving, scores.summary.score_trend.consistent)}
+                        {scores.summary?.score_trend &&
+                          getTrendIcon(scores.summary?.score_trend.improving, scores.summary?.score_trend.consistent)}
                       </div>
                       <p className="text-xs text-muted-foreground">Avg Score</p>
                     </div>
                   </div>
 
-                  {scores.summary.latest_call_date && (
+                  {scores.summary?.latest_call_date && (
                     <>
                       <Separator className="my-3" />
                       <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        Last interview: {formatDate(scores.summary.latest_call_date)}
+                        Last interview: {formatDate(scores.summary?.latest_call_date)}
                       </div>
                     </>
                   )}
@@ -242,18 +242,18 @@ export function CandidateScoresDialog({ open, onOpenChange, candidateId, candida
               </div>
 
               {/* Performance Trend */}
-              {scores.summary.score_trend && (
+              {scores.summary?.score_trend && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
                   <Card className="bg-muted/20">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        {getTrendIcon(scores.summary.score_trend.improving, scores.summary.score_trend.consistent)}
+                        {getTrendIcon(scores.summary?.score_trend.improving, scores.summary?.score_trend.consistent)}
                         <span className="text-sm font-medium">Performance Trend</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {scores.summary.score_trend.improving
+                        {scores.summary?.score_trend.improving
                           ? "Performance is improving over time"
-                          : scores.summary.score_trend.consistent === false
+                          : scores.summary?.score_trend.consistent === false
                             ? "Performance shows some variation"
                             : "Performance is stable"}
                       </p>

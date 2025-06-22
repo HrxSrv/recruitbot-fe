@@ -295,7 +295,7 @@ export function CreateJobDialog({
   const addQuestion = () => {
     setFormData((prev) => ({
       ...prev,
-      questions: [...prev.questions, { question: "", ideal_answer: "", weight: 1.0, important: false }],
+      questions: [...prev.questions, { question: "", ideal_answer: "", weight: 0.1, important: false }],
     }))
   }
 
@@ -552,25 +552,19 @@ export function CreateJobDialog({
                           }
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Question Weight (0.1 - 5.0)</Label>
-                        <Input
-                          type="number"
-                          min="0.1"
-                          max="5.0"
-                          step="0.1"
-                          value={question.weight}
-                          onChange={(e) => updateQuestion(index, { weight: Number.parseFloat(e.target.value) || 1.0 })}
-                        />
-                      </div>
                       <div className="flex items-center space-x-2 mt-3">
                         <Switch
-                          id={`important-${index}`}
+                          id={`required-${index}`}
                           checked={question.important || false}
-                          onCheckedChange={(checked) => updateQuestion(index, { important: checked })}
+                          onCheckedChange={(checked) =>
+                            updateQuestion(index, {
+                              important: checked,
+                              weight: checked ? 5.0 : 0.1, // Set weight based on required toggle
+                            })
+                          }
                         />
-                        <Label htmlFor={`important-${index}`} className="text-sm font-medium">
-                          Mark as Important Question
+                        <Label htmlFor={`required-${index}`} className="text-sm font-medium">
+                          Required Question
                         </Label>
                       </div>
                     </div>
