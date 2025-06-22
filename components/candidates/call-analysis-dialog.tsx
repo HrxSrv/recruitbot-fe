@@ -23,6 +23,7 @@ import {
   Target,
 } from "lucide-react"
 import type { CallDetailsResponse } from "@/lib/api/calls"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface CallAnalysisDialogProps {
   open: boolean
@@ -227,9 +228,9 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                           </Badge>
                         </div>
                         <p className="text-gray-700 leading-relaxed">
-                          {analysis_summary?.executive_summary || 
-                           call_details?.gemini_analysis?.executive_summary || 
-                           "No executive summary available."}
+                          {analysis_summary?.executive_summary ||
+                            call_details?.gemini_analysis?.executive_summary ||
+                            "No executive summary available."}
                         </p>
                         {call_details?.gemini_analysis?.next_steps && (
                           <div className="mt-3 p-3 bg-gray-50 rounded-lg">
@@ -252,12 +253,20 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                           <div className="flex justify-between text-sm mb-2">
                             <span>Technical Skills</span>
                             <span className="font-medium">
-                              {call_details?.gemini_analysis?.technical_evaluation?.technical_score || 
-                               analysis_summary?.technical_score || 0}/100
+                              {call_details?.gemini_analysis?.technical_evaluation?.technical_score ||
+                                analysis_summary?.technical_score ||
+                                0}
+                              /100
                             </span>
                           </div>
-                          <Progress value={call_details?.gemini_analysis?.technical_evaluation?.technical_score || 
-                                           analysis_summary?.technical_score || 0} className="h-2" />
+                          <Progress
+                            value={
+                              call_details?.gemini_analysis?.technical_evaluation?.technical_score ||
+                              analysis_summary?.technical_score ||
+                              0
+                            }
+                            className="h-2"
+                          />
                         </div>
                         <div>
                           <div className="flex justify-between text-sm mb-2">
@@ -318,7 +327,9 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                       {call_details?.gemini_analysis?.interview_duration_assessment && (
                         <div className="mt-3 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
                           <h5 className="font-medium text-yellow-800 mb-1">Duration Assessment:</h5>
-                          <p className="text-sm text-yellow-700">{call_details.gemini_analysis.interview_duration_assessment}</p>
+                          <p className="text-sm text-yellow-700">
+                            {call_details.gemini_analysis.interview_duration_assessment}
+                          </p>
                         </div>
                       )}
                     </CardContent>
@@ -397,7 +408,7 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
 
                   {/* Detailed Evaluations */}
                   <div className="grid md:grid-cols-2 gap-6">
-                    {geminiAnalysis.technical_evaluation && (true && (
+                    {geminiAnalysis.technical_evaluation && true && (
                       <Card>
                         <CardHeader>
                           <CardTitle className="text-base">Technical Evaluation</CardTitle>
@@ -413,7 +424,7 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                           </p>
                         </CardContent>
                       </Card>
-                    ))}
+                    )}
 
                     {geminiAnalysis.communication_evaluation && (
                       <Card>
@@ -489,38 +500,135 @@ export function CallAnalysisDialog({ open, onOpenChange, callData, loading }: Ca
                   </div>
 
                   {/* Current Question */}
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">Question Analysis</CardTitle>
-                        <Badge className={getScoreColor(questions[currentQuestionIndex]?.score)}>
-                          {questions[currentQuestionIndex]?.score || 0}/100
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Question:</h4>
-                        <div className="text-gray-700 bg-gray-50 p-3 rounded-lg max-w-full">
-                          <p className="break-words whitespace-pre-wrap">
-                            {questions[currentQuestionIndex]?.question || "No question available"}
-                          </p>
-                        </div>
-                      </div>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentQuestionIndex}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-6"
+                    >
+                      <Card className="border-2 border-purple-200">
+                        <CardHeader className="bg-purple-50">
+                          <CardTitle className="text-lg flex items-center justify-between">
+                            <span>Question {currentQuestionIndex + 1}</span>
+                            <Badge className={getScoreColor(questions[currentQuestionIndex]?.score)}>
+                              {questions[currentQuestionIndex]?.score || 0}/100
+                            </Badge>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-6">
+                          {/* Question */}
+                          {questions[currentQuestionIndex]?.question && (
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4 text-blue-600" />
+                                Question:
+                              </h4>
+                              <div className="text-gray-700 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <p className="break-words whitespace-pre-wrap">
+                                  {questions[currentQuestionIndex]?.question}
+                                </p>
+                              </div>
+                            </div>
+                          )}
 
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Quality Assessment:</h4>
-                        <Badge variant="outline" className="mb-2">
-                          {questions[currentQuestionIndex]?.response_quality || "Unknown"}
-                        </Badge>
-                        <div className="text-sm text-gray-700 max-w-full">
-                          <p className="break-words whitespace-pre-wrap">
-                            {questions[currentQuestionIndex]?.notes || "No notes available"}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                          {/* Candidate's Answer */}
+                          {questions[currentQuestionIndex]?.answer && (
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <User className="h-4 w-4 text-green-600" />
+                                Candidate's Answer:
+                              </h4>
+                              <div className="text-gray-700 bg-green-50 p-4 rounded-lg border border-green-200">
+                                <p className="break-words whitespace-pre-wrap leading-relaxed">
+                                  {questions[currentQuestionIndex]?.answer}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Quality Assessment & Analysis */}
+                          <div className="grid md:grid-cols-2 gap-6">
+                            {/* Response Quality */}
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <BarChart3 className="h-4 w-4 text-purple-600" />
+                                Response Quality:
+                              </h4>
+                              <div className="space-y-3">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-sm font-medium ${
+                                    questions[currentQuestionIndex]?.response_quality === "excellent"
+                                      ? "border-green-300 text-green-700 bg-green-50"
+                                      : questions[currentQuestionIndex]?.response_quality === "good"
+                                        ? "border-blue-300 text-blue-700 bg-blue-50"
+                                        : questions[currentQuestionIndex]?.response_quality === "average"
+                                          ? "border-yellow-300 text-yellow-700 bg-yellow-50"
+                                          : "border-red-300 text-red-700 bg-red-50"
+                                  }`}
+                                >
+                                  {(questions[currentQuestionIndex]?.response_quality || "Unknown").toUpperCase()}
+                                </Badge>
+                                <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border">
+                                  <p className="break-words whitespace-pre-wrap">
+                                    {questions[currentQuestionIndex]?.notes || "No detailed analysis available"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Score Breakdown */}
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <Target className="h-4 w-4 text-orange-600" />
+                                Score Breakdown:
+                              </h4>
+                              <div className="space-y-3">
+                                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-gray-600">Overall Score</span>
+                                    <span className="text-lg font-bold text-gray-900">
+                                      {questions[currentQuestionIndex]?.score || 0}/100
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div
+                                      className={`h-2 rounded-full transition-all duration-500 ${
+                                        (questions[currentQuestionIndex]?.score || 0) >= 80
+                                          ? "bg-green-500"
+                                          : (questions[currentQuestionIndex]?.score || 0) >= 60
+                                            ? "bg-blue-500"
+                                            : (questions[currentQuestionIndex]?.score || 0) >= 40
+                                              ? "bg-yellow-500"
+                                              : "bg-red-500"
+                                      }`}
+                                      style={{ width: `${questions[currentQuestionIndex]?.score || 0}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Additional Analysis (if available) */}
+                          {questions[currentQuestionIndex]?.analysis && (
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                <Brain className="h-4 w-4" />
+                                Additional AI Analysis:
+                              </h4>
+                              <p className="text-blue-800 text-sm break-words whitespace-pre-wrap">
+                                {questions[currentQuestionIndex]?.analysis}
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </AnimatePresence>
 
                   {/* Question Overview */}
                   <Card>
