@@ -47,10 +47,11 @@ import { CallAnalysisDialog } from "@/components/candidates/call-analysis-dialog
 import { CandidateScoresDialog } from "@/components/candidates/candidate-scores-dialog"
 import { getCandidateScores } from "@/lib/api/calls"
 
-// Utility function to format dates in user's timezone
+// Updated utility functions to format dates in IST timezone
 const formatDateInUserTimezone = (dateString: string | Date) => {
   const date = new Date(dateString)
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -62,7 +63,8 @@ const formatDateInUserTimezone = (dateString: string | Date) => {
 
 const formatDateOnly = (dateString: string | Date) => {
   const date = new Date(dateString)
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -70,13 +72,23 @@ const formatDateOnly = (dateString: string | Date) => {
 }
 
 const formatTimeOnly = (dateString: string | Date) => {
-  const date = new Date(dateString)
-  return date.toLocaleTimeString(undefined, {
+  let date = new Date(dateString)
+  if (typeof dateString === 'string' && !dateString.includes('Z') && !dateString.includes('+')) {
+    date = new Date(dateString + 'Z') // Append Z to indicate UTC
+  } else {
+    date = new Date(dateString)
+  }
+  console.log(`Formatting time for date: ${dateString} -> ${date.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`)
+  return date.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
     hour: "2-digit",
     minute: "2-digit",
   })
 }
-
 // Interview Wizard Component with failsafes
 function InterviewWizard({
   isOpen,

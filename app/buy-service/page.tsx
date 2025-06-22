@@ -66,7 +66,7 @@ export default function BuyServicePage() {
   const { user, logout } = useAuth()
 
   const handleContactSales = () => {
-    window.open("mailto:sales@talenthub.com?subject=Enterprise Plan Inquiry", "_blank")
+    window.open("mailto:sales@Eva.com?subject=Enterprise Plan Inquiry", "_blank")
   }
 
   const handleLogout = async () => {
@@ -86,7 +86,7 @@ export default function BuyServicePage() {
             <div className="rounded-full bg-primary p-2">
               <Building className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">TalentHub</span>
+            <span className="text-xl font-bold">Eva</span>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -116,7 +116,7 @@ export default function BuyServicePage() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-6">
-            Welcome to TalentHub
+            Welcome to Eva
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
@@ -260,7 +260,7 @@ export default function BuyServicePage() {
             <CardContent className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="outline" className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
-                <span>sales@talenthub.com</span>
+                <span>sales@Eva.com</span>
               </Button>
               <Button variant="outline" className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />

@@ -1,4 +1,4 @@
-# TalentHub - AI-Powered HR Dashboard
+# Eva - AI-Powered HR Dashboard
 
 A comprehensive HR dashboard for managing recruitment, candidates, and hiring processes with AI-powered interview assistants and resume analysis.
 
@@ -77,7 +77,7 @@ A comprehensive HR dashboard for managing recruitment, candidates, and hiring pr
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd talenthub-frontend
+   cd Eva-frontend
    ```
 
 2. **Install dependencies**
@@ -267,4 +267,4 @@ For support and questions:
 
 ---
 
-Built with ❤️ by the TalentHub Team
+Built with ❤️ by the Eva Team

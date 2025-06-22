@@ -233,7 +233,7 @@ function LoginPageContent() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 dark:bg-white mb-4">
                 <LucideBuilding className="h-6 w-6 text-white dark:text-slate-900" />
               </div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">TalentHub</h1>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Eva</h1>
               <p className="text-slate-600 dark:text-slate-400 text-sm">
                 Streamline your recruitment process with intelligent candidate management
               </p>

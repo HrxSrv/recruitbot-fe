@@ -9,10 +9,10 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "TalentHub - HR Dashboard",
+  title: "Eva - HR Dashboard",
   description: "A comprehensive HR dashboard for managing recruitment, candidates, and hiring processes",
   keywords: "HR, recruitment, dashboard, hiring, candidates, jobs, talent management",
-  authors: [{ name: "TalentHub Team" }],
+  authors: [{ name: "Eva Team" }],
   icons: {
     icon: "/favicon.ico",
   },

@@ -55,7 +55,7 @@ export function TopNavbar({ onOpenSidebar }: TopNavbarProps) {
           <div className="absolute inset-0 bg-primary/10 rounded-full blur-sm"></div>
           <BriefcaseIcon className="h-6 w-6 relative" />
         </div>
-        <span className="font-semibold">TalentHub</span>
+        <span className="font-semibold">Eva</span>
       </div>
 
       {/* Super Admin Button - Only visible for super admin */}

@@ -38,7 +38,7 @@ export default function ProfilePage() {
   const [editedUser, setEditedUser] = useState({
     name: user?.name || "",
     title: "Senior Recruiter",
-    company: "TalentHub Inc.",
+    company: "Eva Inc.",
     location: "San Francisco, CA",
     phone: "+1 (555) 123-4567",
     website: "linkedin.com/in/johndoe",
