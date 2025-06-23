@@ -5,7 +5,7 @@ import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
-import { User, Loader2, ArrowRight, BarChart3, ArrowUpDown } from "lucide-react"
+import { User, ArrowRight, BarChart3, ArrowUpDown } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -15,6 +15,7 @@ import { listCandidates, type Candidate } from "@/lib/api/candidates"
 import { type Job, getJobs } from "@/lib/api/jobs"
 import { ResumeAnalysisButton } from "@/components/candidates/resume-analysis-button"
 import { CandidateScoresDialog } from "@/components/candidates/candidate-scores-dialog"
+import { CandidateListSkeleton } from "@/components/skeletons/candidate-card-skeleton"
 
 type SortOption = "name_asc" | "name_desc" | "score_desc" | "score_asc" | "recent" | "experience_desc"
 type ScoreRange = "all" | "excellent" | "good" | "average" | "below_average" | "not_evaluated"
@@ -276,9 +277,19 @@ export default function CandidatesPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          <span className="ml-2 text-gray-600">Loading candidates...</span>
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between gap-4">
+            <div className="flex flex-wrap gap-4">
+              <div className="relative w-full sm:w-72">
+                <div className="w-full pl-8 rounded-md border border-input bg-transparent px-3 py-2 h-10" />
+              </div>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="w-[180px] h-10 rounded-md border bg-transparent" />
+              ))}
+            </div>
+          </div>
+
+          <CandidateListSkeleton />
         </div>
       </div>
     )
@@ -480,11 +491,11 @@ export default function CandidatesPage() {
                         onClick={(e) => handleViewScores(candidate.id, candidate.personal_info.name, e)}
                       >
                         <div className="flex flex-col items-center gap-1.5">
-                          {/* <BarChart3 className="h-4 w-4 opacity-60 group-hover/score:opacity-80 transition-opacity" /> */}
+                          <BarChart3 className="h-4 w-4 opacity-60 group-hover/score:opacity-80 transition-opacity" />
                           <div className="text-2xl font-bold leading-none">
                             {formatScore(candidate.overall_score)}
                             {candidate.overall_score !== null && candidate.overall_score !== undefined && (
-                              <span className="text-sm font-normal opacity-70"></span>
+                              <span className="text-sm font-normal opacity-70">%</span>
                             )}
                           </div>
                           <p className="text-xs font-medium uppercase tracking-wider opacity-70">Overall Score</p>

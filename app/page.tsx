@@ -4,9 +4,8 @@ import { Suspense } from "react"
 import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
-import { LucideBuilding, Sun, Moon, Loader2 } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
+import Image from "next/image"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/context/auth-context"
@@ -162,10 +161,7 @@ function LoginPageContent() {
           logo_alignment: "left",
           locale: "en",
         })
-        
-        
-      } 
-      catch (error) {
+      } catch (error) {
         console.error("Failed to re-render Google button:", error)
       }
     }
@@ -217,8 +213,6 @@ function LoginPageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
-    
-
       <div className="flex min-h-screen">
         {/* Left Side - Authentication */}
         <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
@@ -230,10 +224,10 @@ function LoginPageContent() {
           >
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 dark:bg-white mb-4">
-                <LucideBuilding className="h-6 w-6 text-white dark:text-slate-900" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/90 backdrop-blur-sm  p-1 shadow-lg border border-white/20 dark:bg-white mb-4 overflow-hidden">
+                <Image src="/eva.png" alt="Eva Logo" width={32} height={32} className="object-contain" />
               </div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Eva</h1>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">TalentHub</h1>
               <p className="text-slate-600 dark:text-slate-400 text-sm">
                 Streamline your recruitment process with intelligent candidate management
               </p>
@@ -362,8 +356,8 @@ function LoginPageContent() {
 
               {/* Central Focus Element */}
               <div className="w-48 h-48 rounded-3xl bg-gradient-to-br from-white to-slate-100 dark:from-slate-800 dark:to-slate-900 shadow-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 flex items-center justify-center">
-                  <LucideBuilding className="h-12 w-12 text-white dark:text-slate-900" />
+                <div className="w-24 h-24 rounded-2xl bg-white/90 backdrop-blur-sm rounded-full p-1 shadow-lg border border-white/20 dark:from-white dark:to-slate-200 flex items-center justify-center overflow-hidden">
+                  <Image src="/eva.png" alt="Eva Logo" width={48} height={48} className="object-contain" />
                 </div>
               </div>
             </div>
@@ -371,7 +365,7 @@ function LoginPageContent() {
         </div>
       </div>
 
-     <style jsx>{`
+      <style jsx>{`
   @keyframes float {
     0%, 100% { transform: translateY(0px) rotate(0deg); }
     50% { transform: translateY(-20px) rotate(5deg); }

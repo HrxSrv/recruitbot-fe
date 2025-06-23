@@ -1,17 +1,18 @@
-"use client"
+"use client";
 
-import { BriefcaseIcon, Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
-// import { ThemeToggle } from "./theme-toggle"
-import { UserMenu } from "./user-menu"
-import { useAuth } from "@/lib/context/auth-context"
-import Link from "next/link"
+import { BriefcaseIcon, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { UserMenu } from "./user-menu";
+import { useAuth } from "@/lib/context/auth-context";
+import Link from "next/link";
+import Image from "next/image";
+import eva from "@/public/eva.png";
 
 function SuperAdminButton() {
-  const { user } = useAuth()
+  const { user } = useAuth();
 
   if (!user || user.email !== "harshitsrv2004@gmail.com") {
-    return null
+    return null;
   }
 
   return (
@@ -24,11 +25,11 @@ function SuperAdminButton() {
         Super Admin
       </Button>
     </Link>
-  )
+  );
 }
 
 interface TopNavbarProps {
-  onOpenSidebar: () => void
+  onOpenSidebar: () => void;
 }
 
 export function TopNavbar({ onOpenSidebar }: TopNavbarProps) {
@@ -45,18 +46,49 @@ export function TopNavbar({ onOpenSidebar }: TopNavbarProps) {
         <div className="absolute top-1/2 left-2/3 h-1 w-1 rounded-full bg-primary/20 animate-pulse animation-delay-4000"></div>
       </div>
 
-      <Button variant="ghost" size="icon" className="md:hidden relative z-10" onClick={onOpenSidebar}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden relative z-10"
+        onClick={onOpenSidebar}
+      >
         <Menu className="h-5 w-5" />
         <span className="sr-only">Toggle menu</span>
       </Button>
 
-      <div className="flex items-center gap-2 relative z-10">
-        <div className="relative">
-          <div className="absolute inset-0 bg-primary/10 rounded-full blur-sm"></div>
-          <BriefcaseIcon className="h-6 w-6 relative" />
-        </div>
-        <span className="font-semibold">Eva</span>
-      </div>
+      <div className="flex items-center gap-4 relative z-10">
+  {/* Enhanced logo container with multiple visual effects */}
+  <div className="relative group">
+    {/* Outer glow ring */}
+    {/* <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 via-primary/10 to-primary/30 rounded-full blur-md opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div> */}
+    
+    {/* Inner glow */}
+    <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm animate-pulse"></div>
+    
+    {/* Logo container with shadow */}
+    <div className="relative bg-white/90 backdrop-blur-sm rounded-full p-1  border border-white/20">
+      <Image
+        src={eva}
+        alt="Eva Logo"
+        width={40}
+        height={40}
+        className="relative object-contain rounded-full"
+        priority
+      />
+    </div>
+  </div>
+
+  {/* Enhanced text with gradient and effects */}
+  <div className="relative">
+    <span className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent tracking-tight">
+      eva
+    </span>
+    {/* Subtle text shadow effect */}
+    <div className="absolute inset-0 text-3xl font-bold text-primary/10 blur-sm">
+      eva
+    </div>
+  </div>
+</div>
 
       {/* Super Admin Button - Only visible for super admin */}
       <SuperAdminButton />
@@ -67,5 +99,5 @@ export function TopNavbar({ onOpenSidebar }: TopNavbarProps) {
         <UserMenu />
       </div>
     </header>
-  )
+  );
 }

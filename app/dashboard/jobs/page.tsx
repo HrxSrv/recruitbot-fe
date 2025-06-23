@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CreateJobDialog } from "@/components/jobs/create-job-dialog"
 import { type Job, getJobs } from "@/lib/api/jobs"
 import { useToast } from "@/hooks/use-toast"
+import { JobGridSkeleton, JobTableSkeleton } from "@/components/skeletons/job-card-skeleton"
 
 export default function JobsPage() {
   const [view, setView] = useState<"grid" | "table">("table")
@@ -216,11 +217,24 @@ export default function JobsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading jobs...</p>
+      <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 transition-all duration-300 ease-in-out">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">Jobs</h1>
+          <p className="text-muted-foreground">Manage and track all your current job openings</p>
         </div>
+
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-background/80 p-4 rounded-lg border border-border/40 shadow-sm">
+          <div className="relative w-full max-w-sm">
+            <div className="w-full pl-8 rounded-md border border-input bg-transparent px-3 py-2 h-10" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="w-[120px] h-8 rounded-md border bg-transparent" />
+            ))}
+          </div>
+        </div>
+
+        {view === "grid" ? <JobGridSkeleton /> : <JobTableSkeleton />}
       </div>
     )
   }
@@ -460,22 +474,6 @@ export default function JobsPage() {
                     {job.language.charAt(0).toUpperCase() + job.language.slice(1)}
                   </div>
 
-                  {/* <div className="flex items-center text-sm text-muted-foreground">
-                    <DollarSign className="mr-1 h-4 w-4" />
-                    {formatSalary(job.salary_range)}
-                  </div> */}
-
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    {/* <div className="flex items-center">
-                      <Users className="mr-1 h-4 w-4" />
-                      {job.application_count} applications
-                    </div> */}
-                    {/* <div className="flex items-center">
-                      <Eye className="mr-1 h-4 w-4" />
-                      {job.view_count} views
-                    </div> */}
-                  </div>
-
                   {job.application_deadline && (
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Calendar className="mr-1 h-4 w-4" />
@@ -499,53 +497,38 @@ export default function JobsPage() {
                 <TableHead className="min-w-[120px]">Location</TableHead>
                 <TableHead className="min-w-[100px]">Type</TableHead>
                 <TableHead className="min-w-[100px]">Language</TableHead>
-                {/* <TableHead className="min-w-[100px]">Experience</TableHead> */}
-                {/* <TableHead className="min-w-[100px]">Applications</TableHead> */}
-                {/* <TableHead className="min-w-[100px]">Views</TableHead> */}
                 <TableHead className="min-w-[100px]">Posted</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedJobs.map(
-                (job) => (
-                  console.log(job.experience_level),
-                  (
-                    <TableRow
-                      key={job.id}
-                      className="hover:bg-muted/30 transition-colors duration-200 cursor-pointer"
-                      onClick={() => handleJobClick(job.id)}
+              {sortedJobs.map((job) => (
+                <TableRow
+                  key={job.id}
+                  className="hover:bg-muted/30 transition-colors duration-200 cursor-pointer"
+                  onClick={() => handleJobClick(job.id)}
+                >
+                  <TableCell className="font-medium">{job.title}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={getStatusColor(job.status)}
+                      className="transition-colors duration-200 hover:bg-primary/20"
                     >
-                      <TableCell className="font-medium">{job.title}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={getStatusColor(job.status)}
-                          className="transition-colors duration-200 hover:bg-primary/20"
-                        >
-                          {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {job.location}
-                        {job.remote_allowed && (
-                          <Badge variant="outline" className="ml-1 text-xs">
-                            Remote
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>{getJobTypeLabel(job.job_type)}</TableCell>
-                      <TableCell>{job.language.charAt(0).toUpperCase() + job.language.slice(1)}</TableCell>
-                      {/* <TableCell>
-                    {job.experience_level
-                      ? job.experience_level.charAt(0).toUpperCase() + job.experience_level.slice(1)
-                      : "-"}
-                  </TableCell> */}
-                      {/* <TableCell>{job.application_count}</TableCell> */}
-                      {/* <TableCell>{job.view_count}</TableCell> */}
-                      <TableCell>{formatDate(job.created_at)}</TableCell>
-                    </TableRow>
-                  )
-                ),
-              )}
+                      {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {job.location}
+                    {job.remote_allowed && (
+                      <Badge variant="outline" className="ml-1 text-xs">
+                        Remote
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>{getJobTypeLabel(job.job_type)}</TableCell>
+                  <TableCell>{job.language.charAt(0).toUpperCase() + job.language.slice(1)}</TableCell>
+                  <TableCell>{formatDate(job.created_at)}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
