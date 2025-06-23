@@ -1,108 +1,125 @@
-"use client"
+"use client";
 
-import { Suspense } from "react"
-import { useState, useEffect, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { motion } from "framer-motion"
-import { Loader2 } from "lucide-react"
-import Image from "next/image"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useTheme } from "next-themes"
-import { useAuth } from "@/lib/context/auth-context"
+import { Suspense } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
+import Image from "next/image";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useTheme } from "next-themes";
+import { useAuth } from "@/lib/context/auth-context";
 
 declare global {
   interface Window {
     google?: {
       accounts: {
         id: {
-          initialize: (config: any) => void
-          renderButton: (element: HTMLElement, config: any) => void
-          prompt: (callback?: (notification: any) => void) => void
-          disableAutoSelect: () => void
-          cancel: () => void
-        }
-      }
-    }
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, config: any) => void;
+          prompt: (callback?: (notification: any) => void) => void;
+          disableAutoSelect: () => void;
+          cancel: () => void;
+        };
+      };
+    };
   }
 }
 
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "your-google-client-id"
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "your-google-client-id";
 
 function LoginPageContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { theme, setTheme } = useTheme()
-  const { isAuthenticated, isLoading: authLoading, loginWithGoogle } = useAuth()
-  const [isLoading, setIsLoading] = useState(false)
-  const [loginStep, setLoginStep] = useState<string>("")
-  const [googleLoaded, setGoogleLoaded] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const googleButtonRef = useRef<HTMLDivElement>(null)
-  const scriptLoaded = useRef(false)
-  const initializationAttempted = useRef(false)
-  const redirectHandled = useRef(false)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { theme, setTheme } = useTheme();
+  const {
+    isAuthenticated,
+    isLoading: authLoading,
+    loginWithGoogle,
+  } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [loginStep, setLoginStep] = useState<string>("");
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const scriptLoaded = useRef(false);
+  const initializationAttempted = useRef(false);
+  const redirectHandled = useRef(false);
 
   // Handle redirect for authenticated users - only once
   useEffect(() => {
     if (!authLoading && isAuthenticated && !redirectHandled.current) {
-      redirectHandled.current = true
-      const from = searchParams.get("from")
-      const redirectTo = from && from !== "/" ? from : "/dashboard"
+      redirectHandled.current = true;
+      const from = searchParams.get("from");
+      const redirectTo = from && from !== "/" ? from : "/dashboard";
 
       // Use replace to avoid adding to history
-      window.location.replace(redirectTo)
+      window.location.replace(redirectTo);
     }
-  }, [isAuthenticated, authLoading, searchParams])
+  }, [isAuthenticated, authLoading, searchParams]);
 
   // Load Google script only if not authenticated
   useEffect(() => {
-    if (scriptLoaded.current || isAuthenticated || authLoading) return
+    if (scriptLoaded.current || isAuthenticated || authLoading) return;
 
     const loadGoogleScript = () => {
-      const script = document.createElement("script")
-      script.src = "https://accounts.google.com/gsi/client"
-      script.async = true
-      script.defer = true
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
       script.onload = () => {
-        console.log("Google script loaded successfully")
-        setGoogleLoaded(true)
+        console.log("Google script loaded successfully");
+        setGoogleLoaded(true);
         // Add a small delay to ensure Google SDK is fully initialized
         setTimeout(() => {
-          initializeGoogle()
-        }, 100)
-      }
+          initializeGoogle();
+        }, 100);
+      };
       script.onerror = (error) => {
-        console.error("Failed to load Google Sign-In script:", error)
-        setError("Failed to load Google Sign-In. Please refresh the page.")
-      }
-      document.head.appendChild(script)
-      scriptLoaded.current = true
-    }
+        console.error("Failed to load Google Sign-In script:", error);
+        setError("Failed to load Google Sign-In. Please refresh the page.");
+      };
+      document.head.appendChild(script);
+      scriptLoaded.current = true;
+    };
 
-    loadGoogleScript()
+    loadGoogleScript();
 
     return () => {
       // Cleanup
       if (window.google && !isAuthenticated) {
         try {
-          window.google.accounts.id.cancel()
-          window.google.accounts.id.disableAutoSelect()
+          window.google.accounts.id.cancel();
+          window.google.accounts.id.disableAutoSelect();
         } catch (error) {
-          console.error("Google cleanup failed:", error)
+          console.error("Google cleanup failed:", error);
         }
       }
-    }
-  }, [isAuthenticated, authLoading])
+    };
+  }, [isAuthenticated, authLoading]);
 
   const initializeGoogle = () => {
-    if (!window.google || !GOOGLE_CLIENT_ID || isAuthenticated || initializationAttempted.current) {
-      return
+    if (
+      !window.google ||
+      !GOOGLE_CLIENT_ID ||
+      isAuthenticated ||
+      initializationAttempted.current
+    ) {
+      return;
     }
 
-    initializationAttempted.current = true
+    initializationAttempted.current = true;
 
     try {
-      console.log("Initializing Google Sign-In...")
+      console.log("Initializing Google Sign-In...");
 
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
@@ -113,13 +130,13 @@ function LoginPageContent() {
         ux_mode: "popup",
         context: "signin",
         itp_support: true,
-      })
+      });
 
       // Render Google's official button if element exists
       if (googleButtonRef.current) {
         try {
           // Clear any existing content
-          googleButtonRef.current.innerHTML = ""
+          googleButtonRef.current.innerHTML = "";
 
           window.google.accounts.id.renderButton(googleButtonRef.current, {
             theme: theme === "dark" ? "filled_black" : "outline",
@@ -129,27 +146,32 @@ function LoginPageContent() {
             shape: "rectangular",
             logo_alignment: "left",
             locale: "en",
-          })
-          console.log("Google button rendered successfully")
+          });
+          console.log("Google button rendered successfully");
         } catch (renderError) {
-          console.error("Failed to render Google button:", renderError)
-          setError("Failed to render Google Sign-In button")
+          console.error("Failed to render Google button:", renderError);
+          setError("Failed to render Google Sign-In button");
         }
       }
 
-      console.log("Google Sign-In initialized successfully")
+      console.log("Google Sign-In initialized successfully");
     } catch (initError) {
-      console.error("Google initialization failed:", initError)
-      setError("Failed to initialize Google Sign-In")
+      console.error("Google initialization failed:", initError);
+      setError("Failed to initialize Google Sign-In");
     }
-  }
+  };
 
   // Re-render Google button when theme changes
   useEffect(() => {
-    if (googleLoaded && googleButtonRef.current && window.google && !isLoading) {
+    if (
+      googleLoaded &&
+      googleButtonRef.current &&
+      window.google &&
+      !isLoading
+    ) {
       try {
         // Clear existing button
-        googleButtonRef.current.innerHTML = ""
+        googleButtonRef.current.innerHTML = "";
 
         // Re-render with new theme
         window.google.accounts.id.renderButton(googleButtonRef.current, {
@@ -160,32 +182,115 @@ function LoginPageContent() {
           shape: "rectangular",
           logo_alignment: "left",
           locale: "en",
-        })
+        });
       } catch (error) {
-        console.error("Failed to re-render Google button:", error)
+        console.error("Failed to re-render Google button:", error);
       }
     }
-  }, [theme, googleLoaded, isLoading])
+  }, [theme, googleLoaded, isLoading]);
+
+  // Monitor and fix Google button styling after render
+  useEffect(() => {
+    if (!googleLoaded || isLoading || !googleButtonRef.current) return;
+
+    const fixGoogleButtonStyling = () => {
+      const container = googleButtonRef.current;
+      if (!container) return;
+
+      // Find all potential Google button elements
+      const selectors = [
+        'div[data-testid="google-signin-button"]',
+        'div[role="button"][data-client-id]',
+        ".g_id_signin",
+        "[data-client-id]",
+        "div[jsname]",
+        'iframe[src*="accounts.google.com"]',
+      ];
+
+      selectors.forEach((selector) => {
+        const elements = container.querySelectorAll(selector);
+        elements.forEach((element) => {
+          if (element instanceof HTMLElement) {
+            element.style.width = "280px !important";
+            element.style.minWidth = "280px !important";
+            element.style.maxWidth = "280px !important";
+            element.style.flexShrink = "0";
+            element.style.justifyContent = "center";
+            element.style.textAlign = "center";
+            element.style.display = "flex";
+            element.style.alignItems = "center";
+
+            // Also fix child elements
+            const children = element.querySelectorAll("div, span");
+            children.forEach((child) => {
+              if (child instanceof HTMLElement) {
+                child.style.width = "280px !important";
+                child.style.minWidth = "280px !important";
+                child.style.flexShrink = "0";
+                child.style.justifyContent = "center";
+                child.style.textAlign = "center";
+                if (child.tagName === "DIV") {
+                  child.style.display = "flex";
+                  child.style.alignItems = "center";
+                }
+              }
+            });
+          }
+        });
+      });
+    };
+
+    // Initial fix
+    fixGoogleButtonStyling();
+
+    // Set up observer to watch for changes
+    const observer = new MutationObserver(() => {
+      fixGoogleButtonStyling();
+    });
+
+    if (googleButtonRef.current) {
+      observer.observe(googleButtonRef.current, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["style", "class"],
+      });
+    }
+
+    // Also fix on a slight delay to catch async changes
+    const timeouts = [100, 500, 1000, 2000].map((delay) =>
+      setTimeout(fixGoogleButtonStyling, delay)
+    );
+
+    return () => {
+      observer.disconnect();
+      timeouts.forEach(clearTimeout);
+    };
+  }, [googleLoaded, isLoading, theme]);
 
   const handleGoogleCallback = async (response: { credential: string }) => {
-    if (isLoading) return // Prevent multiple simultaneous calls
+    if (isLoading) return; // Prevent multiple simultaneous calls
 
-    console.log("Google callback received")
-    setIsLoading(true)
-    setError(null)
-    setLoginStep("Authenticating with Google...")
+    console.log("Google callback received");
+    setIsLoading(true);
+    setError(null);
+    setLoginStep("Authenticating with Google...");
 
     try {
-      await loginWithGoogle(response)
-      console.log("Login process completed")
+      await loginWithGoogle(response);
+      console.log("Login process completed");
     } catch (error) {
-      console.error("Login failed:", error)
-      setError(error instanceof Error ? error.message : "Login failed. Please try again.")
-      setLoginStep("")
+      console.error("Login failed:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Login failed. Please try again."
+      );
+      setLoginStep("");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Show loading state while checking authentication
   if (authLoading) {
@@ -193,10 +298,12 @@ function LoginPageContent() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600 mx-auto"></div>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Loading...</p>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+            Loading...
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   // Don't render login form if user is authenticated - show redirecting message
@@ -205,10 +312,12 @@ function LoginPageContent() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600 mx-auto"></div>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Redirecting to dashboard...</p>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+            Redirecting to dashboard...
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -224,12 +333,21 @@ function LoginPageContent() {
           >
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/90 backdrop-blur-sm  p-1 shadow-lg border border-white/20 dark:bg-white mb-4 overflow-hidden">
-                <Image src="/eva.png" alt="Eva Logo" width={32} height={32} className="object-contain" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/90 backdrop-blur-sm  p-1 shadow-lg border border-white/20  dark:bg-white mb-4 overflow-hidden">
+                <Image
+                  src="/eva.png"
+                  alt="Eva Logo"
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                />
               </div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">TalentHub</h1>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                TalentHub
+              </h1>
               <p className="text-slate-600 dark:text-slate-400 text-sm">
-                Streamline your recruitment process with intelligent candidate management
+                Streamline your recruitment process with intelligent candidate
+                management
               </p>
             </div>
 
@@ -249,7 +367,9 @@ function LoginPageContent() {
                 {isLoading && loginStep && (
                   <div className="flex items-center justify-center p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
                     <Loader2 className="h-4 w-4 animate-spin mr-3 text-slate-600 dark:text-slate-400" />
-                    <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">{loginStep}</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                      {loginStep}
+                    </span>
                   </div>
                 )}
 
@@ -262,21 +382,25 @@ function LoginPageContent() {
 
                 {/* Google Sign-in Button Container */}
                 <div className="flex justify-center">
-                  <div className="w-full max-w-sm">
+                  <div className="w-full max-w-sm relative">
                     {googleLoaded && !error && !isLoading ? (
                       <div
                         ref={googleButtonRef}
-                        className="flex justify-center [&>div]:!w-full [&>div]:!max-w-none [&>div]:!justify-center"
+                        className="flex justify-center items-center w-full min-w-[280px]"
                         style={{
                           display: "flex",
                           justifyContent: "center",
                           alignItems: "center",
+                          width: "100%",
+                          minWidth: "280px",
                         }}
                       />
                     ) : !error ? (
-                      <div className="flex items-center justify-center p-4 h-12 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div className="flex items-center justify-center p-4 h-12 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 w-full min-w-[280px]">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-400 mr-3"></div>
-                        <span className="text-sm text-slate-500 dark:text-slate-400">Loading Google Sign-In...</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">
+                          Loading Google Sign-In...
+                        </span>
                       </div>
                     ) : null}
                   </div>
@@ -304,7 +428,7 @@ function LoginPageContent() {
               </CardFooter>
             </Card>
 
-            {/* Debug info - only in development */}
+            {/* Debug info - only in development
             {process.env.NODE_ENV === "development" && (
               <div className="mt-6 text-xs text-slate-400 text-center space-y-1 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
                 <p>
@@ -314,7 +438,7 @@ function LoginPageContent() {
                   Auth: {authLoading ? "⏳" : "✅"} | Authenticated: {isAuthenticated ? "✅" : "❌"}
                 </p>
               </div>
-            )}
+            )} */}
           </motion.div>
         </div>
 
@@ -356,8 +480,14 @@ function LoginPageContent() {
 
               {/* Central Focus Element */}
               <div className="w-48 h-48 rounded-3xl bg-gradient-to-br from-white to-slate-100 dark:from-slate-800 dark:to-slate-900 shadow-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                <div className="w-24 h-24 rounded-2xl bg-white/90 backdrop-blur-sm rounded-full p-1 shadow-lg border border-white/20 dark:from-white dark:to-slate-200 flex items-center justify-center overflow-hidden">
-                  <Image src="/eva.png" alt="Eva Logo" width={48} height={48} className="object-contain" />
+                <div className="w-24 h-24 rounded-2xl bg-white/90 backdrop-blur-sm rounded-full dark:from-white dark:to-slate-200 flex items-center justify-center overflow-hidden">
+                  <Image
+                    src="/eva.png"
+                    alt="Eva Logo"
+                    width={48}
+                    height={48}
+                    className="object-contain"
+                  />
                 </div>
               </div>
             </div>
@@ -366,39 +496,99 @@ function LoginPageContent() {
       </div>
 
       <style jsx>{`
-  @keyframes float {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(5deg); }
-  }
-  @keyframes float-delayed {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-15px) rotate(-3deg); }
-  }
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-  .animate-float-delayed {
-    animation: float-delayed 8s ease-in-out infinite;
-    animation-delay: 2s;
-  }
-  
-  /* Google Button Consistency - ADD HERE */
-  div[data-testid="google-signin-button"],
-  div[role="button"][data-client-id] {
-    width: 100% !important;
-    min-width: 240px !important;
-    justify-content: center !important;
-    text-align: center !important;
-  }
-  
-  div[data-testid="google-signin-button"] > div,
-  div[role="button"][data-client-id] > div {
-    width: 100% !important;
-    justify-content: center !important;
-  }
-`}</style>
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-20px) rotate(5deg);
+          }
+        }
+        @keyframes float-delayed {
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-15px) rotate(-3deg);
+          }
+        }
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        .animate-float-delayed {
+          animation: float-delayed 8s ease-in-out infinite;
+          animation-delay: 2s;
+        }
+
+        /* Comprehensive Google Button Styling - All States */
+        :global(div[data-testid="google-signin-button"]),
+        :global(div[role="button"][data-client-id]),
+        :global(.g_id_signin),
+        :global([data-client-id]),
+        :global(iframe[src*="accounts.google.com"]) {
+          width: 100% !important;
+          min-width: 280px !important;
+          max-width: 100% !important;
+        }
+
+        /* Target the actual button element inside */
+        :global(div[data-testid="google-signin-button"] > div),
+        :global(div[role="button"][data-client-id] > div),
+        :global(.g_id_signin > div),
+        :global([data-client-id] > div),
+        :global(div[jsname]) {
+          width: 100% !important;
+          min-width: 280px !important;
+          max-width: 100% !important;
+          justify-content: center !important;
+          text-align: center !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+
+        /* Target nested divs that might contain the button content */
+        :global(div[data-testid="google-signin-button"] div div),
+        :global(div[role="button"][data-client-id] div div),
+        :global(.g_id_signin div div),
+        :global([data-client-id] div div) {
+          width: 100% !important;
+          justify-content: center !important;
+          text-align: center !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+
+        /* Force center alignment for all text content */
+        :global(div[data-testid="google-signin-button"] span),
+        :global(div[role="button"][data-client-id] span),
+        :global(.g_id_signin span),
+        :global([data-client-id] span) {
+          text-align: center !important;
+          width: 100% !important;
+          display: block !important;
+        }
+
+        /* Handle the iframe case */
+        :global(iframe[src*="accounts.google.com"]) {
+          width: 100% !important;
+          min-width: 280px !important;
+          height: 44px !important;
+        }
+
+        /* Additional fallback for any Google button variations */
+        :global([id*="google"]),
+        :global([class*="google"]),
+        :global([data-google]) {
+          width: 100% !important;
+          min-width: 280px !important;
+          justify-content: center !important;
+          text-align: center !important;
+        }
+      `}</style>
     </div>
-  )
+  );
 }
 
 export default function HomePage() {
@@ -408,12 +598,14 @@ export default function HomePage() {
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600 mx-auto"></div>
-            <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Loading...</p>
+            <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+              Loading...
+            </p>
           </div>
         </div>
       }
     >
       <LoginPageContent />
     </Suspense>
-  )
+  );
 }
