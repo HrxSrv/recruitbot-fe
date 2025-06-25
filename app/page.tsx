@@ -329,15 +329,20 @@ function LoginPageContent() {
                   className="object-contain"
                 />
               </div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">TalentHub</h1>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
-                Streamline your recruitment process with intelligent candidate management
-              </p>
+              <div className="relative">
+                <span className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent tracking-tight">
+                  eva
+                </span>
+                {/* Subtle text shadow effect */}
+                <div className="absolute inset-0 text-3xl font-bold text-primary/10 blur-sm">
+                  eva
+                </div>
+              </div>
             </div>
 
             {/* Auth Card */}
             <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm dark:bg-slate-800/80">
-              <CardHeader className="text-center pb-6">
+              <CardHeader className="text-center ">
                 <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">
                   Sign in to continue
                 </CardTitle>
@@ -346,7 +351,7 @@ function LoginPageContent() {
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-6">
+              <CardContent >
                 {/* Loading Step Indicator */}
                 {isLoading && loginStep && (
                   <div className="flex items-center justify-center p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
