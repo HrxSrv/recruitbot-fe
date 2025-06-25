@@ -9,12 +9,14 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Eva - HR Dashboard",
+  title: "TalentHub - HR Dashboard",
   description: "A comprehensive HR dashboard for managing recruitment, candidates, and hiring processes",
   keywords: "HR, recruitment, dashboard, hiring, candidates, jobs, talent management",
-  authors: [{ name: "Eva Team" }],
+  authors: [{ name: "TalentHub Team" }],
   icons: {
-    icon: "/favicon.ico",
+    icon: "/eva.png",
+    shortcut: "/eva.png",
+    apple: "/eva.png",
   },
 }
 
@@ -35,7 +37,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>{children}</AuthProvider>
-          <Toaster/>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
