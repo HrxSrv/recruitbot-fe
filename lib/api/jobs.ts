@@ -49,6 +49,24 @@ export interface CreateJobData {
   language: string
 }
 
+export interface JobFilters {
+  skip?: number
+  limit?: number
+  status_filter?: "draft" | "active" | "paused" | "closed"
+  job_type_filter?: "full_time" | "part_time" | "contract" | "internship"
+  location_filter?: string
+  search?: string
+  sort_by?: "newest" | "oldest" | "title_asc" | "title_desc" | "status" | "applications"
+}
+
+export interface PaginatedJobsResponse {
+  jobs: Job[]
+  total: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
 
 // Get auth token from cookies
@@ -63,6 +81,7 @@ function getAuthToken(): string | null {
     return null
   }
 }
+
 function isTokenExpired(token: string): boolean {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]))
@@ -73,6 +92,7 @@ function isTokenExpired(token: string): boolean {
     return true
   }
 }
+
 // Helper function for API requests with explicit cookie handling
 async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 10000) {
   const controller = new AbortController()
@@ -126,6 +146,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, timeout = 1
     throw error
   }
 }
+
 async function refreshTokenIfNeeded(): Promise<boolean> {
   const refreshToken = localStorage.getItem("refresh_token")
 
@@ -176,9 +197,41 @@ async function fetchWithAutoRefresh(url: string, options: RequestInit = {}, time
 
   return response
 }
-export async function getJobs(): Promise<Job[]> {
+
+// Updated getJobs function with enhanced pagination support
+export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
   try {
-    const response = await fetchWithAutoRefresh(`${API_BASE_URL}/jobs/`)
+    // Build query parameters
+    const queryParams = new URLSearchParams()
+
+    // Add pagination parameters with defaults
+    queryParams.append("skip", (filters.skip || 0).toString())
+    queryParams.append("limit", (filters.limit || 20).toString())
+
+    // Add optional filters if provided
+    if (filters.status_filter) {
+      queryParams.append("status_filter", filters.status_filter)
+    }
+
+    if (filters.job_type_filter) {
+      queryParams.append("job_type_filter", filters.job_type_filter)
+    }
+
+    if (filters.location_filter) {
+      queryParams.append("location_filter", filters.location_filter)
+    }
+
+    if (filters.search) {
+      queryParams.append("search", filters.search)
+    }
+
+    if (filters.sort_by) {
+      queryParams.append("sort_by", filters.sort_by)
+    }
+
+    const url = `${API_BASE_URL}/jobs/?${queryParams.toString()}`
+    const response = await fetchWithAutoRefresh(url)
+
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error("Authentication required. Please log in again.")
@@ -189,6 +242,142 @@ export async function getJobs(): Promise<Job[]> {
     return await response.json()
   } catch (error) {
     console.error("Error fetching jobs:", error)
+    throw error
+  }
+}
+
+// Enhanced paginated jobs function with better response handling
+export async function getJobsPaginated(
+  page = 1,
+  pageSize = 20,
+  filters: Omit<JobFilters, "skip" | "limit"> = {},
+): Promise<Job[]> {
+  try {
+    const skip = (page - 1) * pageSize
+
+    // Build query parameters
+    const queryParams = new URLSearchParams()
+    queryParams.append("skip", skip.toString())
+    queryParams.append("limit", pageSize.toString())
+
+    // Add optional filters if provided
+    if (filters.status_filter) {
+      queryParams.append("status_filter", filters.status_filter)
+    }
+
+    if (filters.job_type_filter) {
+      queryParams.append("job_type_filter", filters.job_type_filter)
+    }
+
+    if (filters.location_filter) {
+      queryParams.append("location_filter", filters.location_filter)
+    }
+
+    if (filters.search) {
+      queryParams.append("search", filters.search)
+    }
+
+    if (filters.sort_by) {
+      queryParams.append("sort_by", filters.sort_by)
+    }
+
+    const url = `${API_BASE_URL}/jobs/?${queryParams.toString()}`
+    const response = await fetchWithAutoRefresh(url)
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Authentication required. Please log in again.")
+      }
+      throw new Error(`Failed to fetch jobs: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    // Handle both array response (current) and paginated response (future)
+    if (Array.isArray(data)) {
+      return data
+    } else if (data.jobs && Array.isArray(data.jobs)) {
+      return data.jobs
+    } else {
+      throw new Error("Invalid response format")
+    }
+  } catch (error) {
+    console.error("Error fetching paginated jobs:", error)
+    throw error
+  }
+}
+
+// New function to get jobs with full pagination metadata
+export async function getJobsWithPagination(
+  page = 1,
+  pageSize = 20,
+  filters: Omit<JobFilters, "skip" | "limit"> = {},
+): Promise<PaginatedJobsResponse> {
+  try {
+    const skip = (page - 1) * pageSize
+
+    // Build query parameters
+    const queryParams = new URLSearchParams()
+    queryParams.append("skip", skip.toString())
+    queryParams.append("limit", pageSize.toString())
+    queryParams.append("include_pagination", "true") // Request pagination metadata
+
+    // Add optional filters if provided
+    if (filters.status_filter) {
+      queryParams.append("status_filter", filters.status_filter)
+    }
+
+    if (filters.job_type_filter) {
+      queryParams.append("job_type_filter", filters.job_type_filter)
+    }
+
+    if (filters.location_filter) {
+      queryParams.append("location_filter", filters.location_filter)
+    }
+
+    if (filters.search) {
+      queryParams.append("search", filters.search)
+    }
+
+    if (filters.sort_by) {
+      queryParams.append("sort_by", filters.sort_by)
+    }
+
+    const url = `${API_BASE_URL}/jobs/?${queryParams.toString()}`
+    const response = await fetchWithAutoRefresh(url)
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Authentication required. Please log in again.")
+      }
+      throw new Error(`Failed to fetch jobs: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    // Handle paginated response format
+    if (data.jobs && Array.isArray(data.jobs)) {
+      return {
+        jobs: data.jobs,
+        total: data.total || data.jobs.length,
+        page: data.page || page,
+        page_size: data.page_size || pageSize,
+        total_pages: data.total_pages || Math.ceil((data.total || data.jobs.length) / pageSize),
+      }
+    } else if (Array.isArray(data)) {
+      // Fallback for current API format
+      return {
+        jobs: data,
+        total: data.length,
+        page: page,
+        page_size: pageSize,
+        total_pages: Math.ceil(data.length / pageSize),
+      }
+    } else {
+      throw new Error("Invalid response format")
+    }
+  } catch (error) {
+    console.error("Error fetching jobs with pagination:", error)
     throw error
   }
 }
@@ -213,6 +402,7 @@ export async function getJob(id: string): Promise<Job> {
     throw error
   }
 }
+
 export interface JobNameResponse {
   job_id: string
   job_name: string // This matches your backend response
@@ -308,6 +498,7 @@ export async function deleteJob(id: string): Promise<void> {
     throw error
   }
 }
+
 export async function publishJob(id: string): Promise<void> {
   try {
     const response = await fetchWithAutoRefresh(`${API_BASE_URL}/jobs/${id}/publish`, {
@@ -326,6 +517,7 @@ export async function publishJob(id: string): Promise<void> {
     throw error
   }
 }
+
 export async function pauseJob(id: string): Promise<void> {
   try {
     const response = await fetchWithAutoRefresh(`${API_BASE_URL}/jobs/${id}/pause`, {
@@ -344,6 +536,7 @@ export async function pauseJob(id: string): Promise<void> {
     throw error
   }
 }
+
 export async function resumeJob(id: string): Promise<void> {
   try {
     const response = await fetchWithAutoRefresh(`${API_BASE_URL}/jobs/${id}/resume`, {

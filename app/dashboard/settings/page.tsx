@@ -100,10 +100,10 @@ export default function SettingsPage() {
   return (
     <div className="container max-w-7xl mx-auto p-6">
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
+        {/* <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">Manage your settings and preferences.</p>
-        </div>
+        </div> */}
 
         {/* Timezone Settings */}
         <Card className="border shadow-sm">

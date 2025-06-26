@@ -5,7 +5,7 @@ import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
-import { User, ArrowRight, BarChart3, ArrowUpDown } from "lucide-react"
+import { User, ArrowRight, BarChart3, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -40,7 +40,7 @@ export default function CandidatesPage() {
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
-    per_page: 20,
+    per_page: 5,
     has_next: false,
   })
 
@@ -48,6 +48,9 @@ export default function CandidatesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const jobId = searchParams.get("jobId")
+
+  // Calculate total pages
+  const totalPages = Math.ceil(pagination.total / pagination.per_page)
 
   // Application status options
   const statusOptions = [
@@ -78,11 +81,25 @@ export default function CandidatesPage() {
     { value: "not_evaluated", label: "Not Evaluated" },
   ]
 
+  // Page size options
+  const pageSizeOptions = [
+    {value: 5, label: "5 per page"},
+    { value: 10, label: "10 per page" },
+    { value: 20, label: "20 per page" },
+    { value: 50, label: "50 per page" },
+    { value: 100, label: "100 per page" },
+  ]
+
   useEffect(() => {
     if (jobId) {
       setSelectedJobFilter(jobId)
     }
   }, [jobId])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, page: 1 }))
+  }, [searchQuery, selectedJobFilter, selectedStatusFilter, scoreRange, sortBy])
 
   // Fetch jobs from API
   const fetchJobs = async () => {
@@ -118,12 +135,13 @@ export default function CandidatesPage() {
       })
 
       setCandidates(response.candidates)
-      setPagination({
+      setPagination((prev) => ({
+        ...prev,
         total: response.total,
         page: response.page,
         per_page: response.per_page,
         has_next: response.has_next,
-      })
+      }))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch candidates"
       setError(errorMessage)
@@ -144,9 +162,9 @@ export default function CandidatesPage() {
 
   useEffect(() => {
     fetchCandidates()
-  }, [selectedJobFilter, selectedStatusFilter, pagination.page])
+  }, [selectedJobFilter, selectedStatusFilter, pagination.page, pagination.per_page])
 
-  // Sort and filter candidates
+  // Sort and filter candidates (client-side filtering for unsupported filters)
   const processedCandidates = React.useMemo(() => {
     const filtered = candidates.filter((candidate) => {
       const matchesSearch =
@@ -213,6 +231,18 @@ export default function CandidatesPage() {
     setScoresDialogOpen(true)
   }
 
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }))
+  }
+
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPagination((prev) => ({
+      ...prev,
+      per_page: Number.parseInt(newPageSize),
+      page: 1,
+    }))
+  }
+
   // Helper function to get job title by ID
   const getJobTitle = (jobId: string) => {
     const job = jobs.find((j) => j.id === jobId)
@@ -267,15 +297,46 @@ export default function CandidatesPage() {
     fetchCandidates()
   }
 
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = []
+    const maxVisiblePages = 5
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      const start = Math.max(1, pagination.page - 2)
+      const end = Math.min(totalPages, start + maxVisiblePages - 1)
+
+      if (start > 1) {
+        pages.push(1)
+        if (start > 2) pages.push("...")
+      }
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i)
+      }
+
+      if (end < totalPages) {
+        if (end < totalPages - 1) pages.push("...")
+        pages.push(totalPages)
+      }
+    }
+
+    return pages
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-bold tracking-tight">Candidates</h1>
             <p className="text-muted-foreground">View and manage all candidates in your recruitment pipeline</p>
           </div>
-        </div>
+        </div> */}
 
         <div className="flex flex-col space-y-4">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -331,7 +392,14 @@ export default function CandidatesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">Candidates</h1>
-          <p className="text-muted-foreground">View and manage all candidates in your recruitment pipeline</p>
+          <p className="text-muted-foreground">
+            View and manage all candidates in your recruitment pipeline
+            {pagination.total > 0 && (
+              <span className="ml-2 text-sm font-medium text-slate-600">
+                ({pagination.total.toLocaleString()} total)
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -423,6 +491,19 @@ export default function CandidatesPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <Select value={pagination.per_page.toString()} onValueChange={handlePageSizeChange}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {pageSizeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value.toString()}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="grid gap-4">
@@ -438,10 +519,10 @@ export default function CandidatesPage() {
               </div>
 
               <CardContent className="p-6">
-                <div className="flex items-start gap-6">
-                  {/* Left Section - Avatar and Basic Info */}
-                  <div className="flex items-center gap-4 flex-shrink-0">
-                    <div className="relative">
+                <div className="relative grid grid-cols-12 gap-6 items-center">
+                  {/* Left Section - Avatar and Basic Info (4 columns) */}
+                  <div className="col-span-4 flex items-center gap-4">
+                    <div className="relative flex-shrink-0">
                       <Avatar className="w-16 h-16 border-2 border-slate-100 shadow-sm">
                         <AvatarFallback className="text-base font-semibold bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700">
                           {candidate.personal_info.name
@@ -464,11 +545,11 @@ export default function CandidatesPage() {
                       />
                     </div>
 
-                    <div className="space-y-1.5">
-                      <h3 className="text-xl font-semibold text-slate-900 leading-tight">
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <h3 className="text-xl font-semibold text-slate-900 leading-tight truncate">
                         {candidate.personal_info.name}
                       </h3>
-                      <p className="text-sm text-slate-600 font-medium">{candidate.personal_info.email}</p>
+                      <p className="text-sm text-slate-600 font-medium truncate">{candidate.personal_info.email}</p>
                       <div className="flex items-center gap-3">
                         <Badge
                           variant="secondary"
@@ -481,33 +562,31 @@ export default function CandidatesPage() {
                     </div>
                   </div>
 
-                  {/* Center Section - Overall Score */}
-                  <div className="flex-1 flex justify-center items-center px-6 border-x border-slate-100">
-                    <div className="text-center">
-                      <button
-                        className={`group/score relative px-4 py-3 rounded-lg transition-all duration-200 hover:shadow-sm border ${getScoreColor(
-                          candidate.overall_score,
-                        )} hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2`}
-                        onClick={(e) => handleViewScores(candidate.id, candidate.personal_info.name, e)}
-                      >
-                        <div className="flex flex-col items-center gap-1.5">
-                          <BarChart3 className="h-4 w-4 opacity-60 group-hover/score:opacity-80 transition-opacity" />
-                          <div className="text-2xl font-bold leading-none">
-                            {formatScore(candidate.overall_score)}
-                            {candidate.overall_score !== null && candidate.overall_score !== undefined && (
-                              <span className="text-sm font-normal opacity-70">%</span>
-                            )}
-                          </div>
-                          <p className="text-xs font-medium uppercase tracking-wider opacity-70">Overall Score</p>
+                  {/* Center Section - Overall Score (4 columns, absolutely centered) */}
+                  <div className="col-span-4 flex justify-center">
+                    <button
+                      className={`group/score relative px-4 py-3 rounded-lg transition-all duration-200 hover:shadow-sm border ${getScoreColor(
+                        candidate.overall_score,
+                      )} hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2`}
+                      onClick={(e) => handleViewScores(candidate.id, candidate.personal_info.name, e)}
+                    >
+                      <div className="flex flex-col items-center gap-1.5">
+                        <BarChart3 className="h-4 w-4 opacity-60 group-hover/score:opacity-80 transition-opacity" />
+                        <div className="text-2xl font-bold leading-none">
+                          {formatScore(candidate.overall_score)}
+                          {candidate.overall_score !== null && candidate.overall_score !== undefined && (
+                            <span className="text-sm font-normal opacity-70">%</span>
+                          )}
                         </div>
-                      </button>
-                    </div>
+                        <p className="text-xs font-medium uppercase tracking-wider opacity-70">Overall Score</p>
+                      </div>
+                    </button>
                   </div>
 
-                  {/* Right Section - Application Status */}
-                  <div className="flex flex-col justify-center items-end gap-4 flex-shrink-0 min-w-[200px] relative">
+                  {/* Right Section - Application Status (4 columns) */}
+                  <div className="col-span-4 flex flex-col justify-center items-end gap-4 relative">
                     {/* Application Status Badges */}
-                    <div className="flex flex-wrap gap-1.5 justify-end max-w-[180px]">
+                    <div className="flex flex-wrap gap-1.5 justify-end max-w-full">
                       {candidate.applications.map((app, index) => (
                         <Badge
                           key={index}
@@ -551,29 +630,60 @@ export default function CandidatesPage() {
           )}
         </div>
 
-        {/* Pagination */}
-        {pagination.total > pagination.per_page && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-700">
-              Showing {(pagination.page - 1) * pagination.per_page + 1} to{" "}
-              {Math.min(pagination.page * pagination.per_page, pagination.total)} of {pagination.total} candidates
-            </p>
-            <div className="flex gap-2">
+        {/* Enhanced Pagination */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200">
+            <div className="text-sm text-slate-600">
+              Showing {Math.min((pagination.page - 1) * pagination.per_page + 1, pagination.total)} to{" "}
+              {Math.min(pagination.page * pagination.per_page, pagination.total)} of {pagination.total.toLocaleString()}{" "}
+              candidates
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Previous Button */}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+                onClick={() => handlePageChange(pagination.page - 1)}
                 disabled={pagination.page === 1}
+                className="flex items-center gap-1"
               >
+                <ChevronLeft className="h-4 w-4" />
                 Previous
               </Button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1">
+                {getPageNumbers().map((page, index) => (
+                  <React.Fragment key={index}>
+                    {page === "..." ? (
+                      <span className="px-2 py-1 text-slate-400">...</span>
+                    ) : (
+                      <Button
+                        variant={pagination.page === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page as number)}
+                        className={`min-w-[40px] ${
+                          pagination.page === page ? "bg-slate-900 text-white hover:bg-slate-800" : "hover:bg-slate-50"
+                        }`}
+                      >
+                        {page}
+                      </Button>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+
+              {/* Next Button */}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-                disabled={!pagination.has_next}
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={!pagination.has_next || pagination.page >= totalPages}
+                className="flex items-center gap-1"
               >
                 Next
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
