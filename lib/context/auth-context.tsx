@@ -10,6 +10,7 @@ interface User {
   email: string
   name: string
   picture?: string
+  customer_id?: string
   customer?: {
     id: string
     company_name: string

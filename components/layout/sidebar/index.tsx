@@ -22,12 +22,6 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
       <div className="absolute inset-0 glass-sidebar backdrop-blur-md"></div>
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5"></div>
 
-      {/* Subtle animated particles */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 right-1/4 h-1 w-1 rounded-full bg-primary/20 animate-pulse"></div>
-        <div className="absolute top-3/4 right-1/3 h-1 w-1 rounded-full bg-primary/20 animate-pulse animation-delay-2000"></div>
-        <div className="absolute top-1/2 right-2/3 h-1 w-1 rounded-full bg-primary/20 animate-pulse animation-delay-4000"></div>
-      </div>
 
       {isMobile && (
         <div className="flex h-16 items-center justify-end border-b border-white/10 px-4 relative z-10">

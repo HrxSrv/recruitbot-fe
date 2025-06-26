@@ -33,7 +33,7 @@ export function NavItem({ href, icon: Icon, title, isActive }: NavItemProps) {
       {/* Glass overlay for active items */}
       {isActive && (
         <motion.div
-          className="absolute inset-0 bg-white/10 rounded-lg backdrop-blur-[2px]"
+          className="absolute inset-0 bg-white/10 rounded-lg "
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -48,15 +48,15 @@ export function NavItem({ href, icon: Icon, title, isActive }: NavItemProps) {
 
       <span className="relative z-10">{title}</span>
 
-      {isActive && (
+      {/* {isActive && (
         <motion.div
           layoutId="activeNav"
-          className="absolute right-0 h-6 w-1 rounded-l-full bg-primary/80 shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
+          className="absolute right-1 h-6 w-1 rounded-l-full bg-primary/80 shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         />
-      )}
+      )} */}
     </Link>
   )
 }
