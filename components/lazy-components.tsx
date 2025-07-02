@@ -48,3 +48,9 @@ export const QuickScheduleDialog = lazy(() =>
     default: module.QuickScheduleDialog,
   })),
 )
+
+export const JobAnalysisDialog = lazy(() =>
+  import("@/components/candidates/job-analysis-dialog").then((module) => ({
+    default: module.JobAnalysisDialog,
+  })),
+)

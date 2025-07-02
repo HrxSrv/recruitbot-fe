@@ -86,6 +86,12 @@ export function CandidateScoresDialog({ open, onOpenChange, candidateId, candida
     })
   }
 
+  // Helper function to safely format scores
+  const formatScore = (score: number | null | undefined) => {
+    if (score == null) return "N/A"
+    return score.toFixed(0)
+  }
+
   const scoreCategories = [
     {
       key: "overall_score",
@@ -131,7 +137,7 @@ export function CandidateScoresDialog({ open, onOpenChange, candidateId, candida
             </div>
           ) : scores ? (
             <div className="space-y-4">
-              {/* Summary? Stats */}
+              {/* Summary Stats */}
               <Card className="bg-muted/30">
                 <CardContent className="p-4">
                   <div className="grid grid-cols-2 gap-4 text-center">
@@ -142,7 +148,7 @@ export function CandidateScoresDialog({ open, onOpenChange, candidateId, candida
                     <div>
                       <div className="flex items-center justify-center gap-1">
                         <span className="text-2xl font-bold text-foreground">
-                          {scores.scores.overall_score?.average?.toFixed(0) || "N/A"}
+                          {formatScore(scores.scores.overall_score?.average)}
                         </span>
                         {scores.summary?.score_trend &&
                           getTrendIcon(scores.summary?.score_trend.improving, scores.summary?.score_trend.consistent)}
@@ -200,13 +206,13 @@ export function CandidateScoresDialog({ open, onOpenChange, candidateId, candida
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-muted-foreground">Average</span>
                                   <span className={`text-lg font-bold ${getScoreColor(scoreData.average)}`}>
-                                    {scoreData.average.toFixed(0)}%
+                                    {formatScore(scoreData.average)}%
                                   </span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-muted-foreground">Latest</span>
                                   <span className={`text-sm font-medium ${getScoreColor(scoreData.latest)}`}>
-                                    {scoreData.latest}%
+                                    {formatScore(scoreData.latest)}%
                                   </span>
                                 </div>
 
@@ -214,16 +220,16 @@ export function CandidateScoresDialog({ open, onOpenChange, candidateId, candida
                                 <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                                   <motion.div
                                     className={`h-1.5 rounded-full ${
-                                      scoreData.average >= 80
+                                      (scoreData.average ?? 0) >= 80
                                         ? "bg-emerald-500"
-                                        : scoreData.average >= 60
+                                        : (scoreData.average ?? 0) >= 60
                                           ? "bg-blue-500"
-                                          : scoreData.average >= 40
+                                          : (scoreData.average ?? 0) >= 40
                                             ? "bg-amber-500"
                                             : "bg-red-500"
                                     }`}
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${scoreData.average}%` }}
+                                    animate={{ width: `${scoreData.average ?? 0}%` }}
                                     transition={{ delay: index * 0.1 + 0.3, duration: 0.6 }}
                                   />
                                 </div>

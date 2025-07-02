@@ -48,6 +48,39 @@ export interface BulkUploadStatusResponse {
   }>
 }
 
+export interface DriveJobAnalysis {
+  id: any
+  job_id: string
+  status: "pending" | "processing" | "completed" | "completed_with_errors" | "failed"
+  folder_id: string
+  folder_name: string
+  job_role_id?: string
+  customer_id: string
+  uploaded_by: string
+  total_files: number
+  processed_files: number
+  successful_uploads: number
+  failed_uploads: number
+  successful_files: Array<{
+    filename: string
+    processed_at: string
+    processing_time_seconds: number
+    candidate_id: string
+    s3_url: string
+  }>
+  failed_files: Array<{
+    filename: string
+    error: string
+    failed_at: string
+    processing_time_seconds: number
+    candidate_id?: string
+    s3_url: string
+  }>
+  error_message?: string
+  created_at: string
+  updated_at: string
+  completed_at?: string
+}
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
 
 // Get auth token from localStorage with SSR safety
@@ -249,4 +282,120 @@ Sarah Wilson,+1444987654,sarah.wilson@example.com,`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+}
+
+
+export interface DriveUploadRequest {
+  folder_id: string
+  folder_name: string
+  access_token: string
+  job_id: string
+}
+
+export interface DriveUploadResponse {
+  job_id: string
+  message: string
+  files_found: Array<{
+    name: string
+    id: string
+  }>
+}
+
+export interface DriveJobStatus {
+  job_id: string
+  status: "pending" | "processing" | "completed" | "completed_with_errors" | "failed"
+  folder_name: string
+  total_files: number
+  processed_files: number
+  successful_uploads: number
+  failed_uploads: number
+  completion_percentage: number
+  latest_processed_file?: string
+  created_at: string
+  updated_at: string
+  error_message?: string
+}
+
+export interface UserDriveJobsResponse {
+  jobs: Array<{
+    job_id: string
+    folder_name: string
+    status: "pending" | "processing" | "completed" | "completed_with_errors" | "failed"
+    completion_percentage: number
+    processed_files: number
+    total_files: number
+    latest_processed_file?: string
+    created_at: string
+  }>
+}
+
+// Upload from Google Drive
+export const uploadFromGoogleDrive = async (
+  data: DriveUploadRequest,
+  userId: string,
+  customerId: string
+): Promise<DriveUploadResponse> => {
+  console.log(typeof(customerId))
+  console.log(typeof(userId))
+  const response = await fetchWithAuth(`${API_BASE_URL}/drive/process-drive-folder`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      access_token: data.access_token,
+      folder_id: data.folder_id,
+      folder_name: data.folder_name,
+      job_id: data.job_id,
+      customer_id: customerId, // Now passed as parameter
+      uploaded_by_user_id: userId, // Now passed as parameter
+    }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.detail || `Google Drive upload failed: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+// Get drive job status
+export const getDriveJobStatus = async (jobId: string): Promise<DriveJobStatus> => {
+  const response = await fetchWithAuth(`${API_BASE_URL}/drive/job-status/${jobId}`)
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.detail || `Failed to get job status: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+// Get user's drive jobs
+export const getUserDriveJobs = async (userId: string): Promise<UserDriveJobsResponse> => {
+  const response = await fetchWithAuth(`${API_BASE_URL}/drive/user-jobs/${userId}`)
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.detail || `Failed to get user jobs: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+
+export async function getJobAnalysis(jobId: string): Promise<DriveJobAnalysis> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/drive/job-status/${jobId}`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || "Failed to get job analysis")
+  }
+
+  return response.json()
 }
